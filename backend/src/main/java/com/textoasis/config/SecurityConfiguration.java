@@ -25,6 +25,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/api/cities").permitAll()
+                        .requestMatchers("/api/city/**").permitAll()
                         .requestMatchers("/api/tags").permitAll()
                         .requestMatchers("/api/recommend").permitAll()
                         .anyRequest().authenticated()

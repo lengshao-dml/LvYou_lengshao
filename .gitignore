@@ -46,3 +46,6 @@ application-local.properties
 
 # H2 Database
 /backend/data/
+
+# Example files
+shili.html

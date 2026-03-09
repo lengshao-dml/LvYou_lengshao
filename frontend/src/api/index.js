@@ -28,3 +28,7 @@ export const getRecommendations = (recommendationRequest) => {
 
 // 如果需要，未来可以添加更多API调用
 // export const getCities = () => apiClient.get('/cities');
+
+export const getCityByName = (name) => {
+    return apiClient.get(`/city/${name}`);
+};

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRecommendationStore } from '@/store/recommendation';
 
 const store = useRecommendationStore();
@@ -13,6 +13,15 @@ const distanceScope = ref('ANY'); // 默认"不限"
 // 组件加载时，自动获取标签列表
 onMounted(() => {
   store.fetchTags();
+});
+
+// 将标签分为两列的计算属性
+const tagColumns = computed(() => {
+  const midpoint = Math.ceil(store.tags.length / 2);
+  return [
+    store.tags.slice(0, midpoint),
+    store.tags.slice(midpoint)
+  ];
 });
 
 // 处理标签点击
@@ -38,64 +47,97 @@ const handleSubmit = () => {
 </script>
 
 <template>
-  <div class="card p-4 shadow-sm">
-    <h2 class="mb-4">开始您的下一次旅行</h2>
+  <div>
+    <div class="text-center mb-4">
+        <h2 class="fw-bold d-inline">智能推荐</h2>
+        <p class="text-muted d-inline ms-2">根据您的偏好，为您量身定制旅行方案</p>
+    </div>
     <form @submit.prevent="handleSubmit">
-      <!-- 出发地 -->
-      <div class="mb-3">
-        <label for="departureCity" class="form-label"><i class="bi bi-geo-alt-fill"></i> 出发城市</label>
-        <input type="text" class="form-control" id="departureCity" v-model="departureCity" required>
-      </div>
-
-      <!-- 出行日期 -->
-      <div class="mb-3">
-        <label for="travelDate" class="form-label"><i class="bi bi-calendar-event-fill"></i> 出行日期</label>
-        <input type="date" class="form-control" id="travelDate" v-model="travelDate" required>
-      </div>
-
-      <!-- 距离范围 -->
-      <div class="mb-4">
-        <label class="form-label"><i class="bi bi-broadcast-pin"></i> 距离范围</label>
-        <div class="d-flex">
-          <div class="form-check me-3">
-            <input class="form-check-input" type="radio" id="scopeAny" value="ANY" v-model="distanceScope">
-            <label class="form-check-label" for="scopeAny">不限</label>
-          </div>
-          <div class="form-check me-3">
-            <input class="form-check-input" type="radio" id="scopeProvince" value="PROVINCE" v-model="distanceScope">
-            <label class="form-check-label" for="scopeProvince">省内</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" id="scopeNearby" value="NEARBY_500KM" v-model="distanceScope">
-            <label class="form-check-label" for="scopeNearby">周边(500km)</label>
+      <div class="row g-4">
+        <!-- Part 1: Departure and Date -->
+        <div class="col-lg-4 col-md-12">
+          <div class="filter-card p-3 h-100">
+            <div class="mb-3">
+              <label for="departureCity" class="form-label fw-medium"><i class="bi bi-geo-alt-fill me-2"></i>出发城市</label>
+              <input type="text" class="form-control" id="departureCity" v-model="departureCity" required>
+            </div>
+            <div>
+              <label for="travelDate" class="form-label fw-medium"><i class="bi bi-calendar-event-fill me-2"></i>出行日期</label>
+              <input type="date" class="form-control" id="travelDate" v-model="travelDate" required>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 兴趣标签 -->
-      <div class="mb-4">
-        <label class="form-label"><i class="bi bi-tags-fill"></i> 兴趣标签 (可多选)</label>
-        <div>
-          <button
-            v-for="tag in store.tags"
-            :key="tag.id"
-            type="button"
-            class="btn me-2 mb-2"
-            :class="selectedTags.includes(tag.name) ? 'btn-primary' : 'btn-outline-secondary'"
-            @click="toggleTag(tag.name)"
-          >
-            {{ tag.name }}
-          </button>
+        <!-- Part 2: Distance Scope -->
+        <div class="col-lg-4 col-md-6">
+          <div class="filter-card p-3 h-100 d-flex flex-column">
+            <label class="form-label fw-medium d-block mb-3"><i class="bi bi-broadcast-pin me-2"></i>距离范围</label>
+            <div class="d-flex flex-column justify-content-center flex-grow-1">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" id="scopeAny" value="ANY" v-model="distanceScope">
+                <label class="form-check-label" for="scopeAny">不限</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" id="scopeProvince" value="PROVINCE" v-model="distanceScope">
+                <label class="form-check-label" for="scopeProvince">省内</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" id="scopeNearby" value="NEARBY_500KM" v-model="distanceScope">
+                <label class="form-check-label" for="scopeNearby">周边(500km)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Part 3: Interest Tags -->
+        <div class="col-lg-4 col-md-6">
+          <div class="filter-card p-3 h-100">
+            <label class="form-label fw-medium d-block mb-3"><i class="bi bi-tags-fill me-2"></i>兴趣标签</label>
+            <div class="row">
+              <div class="col-6">
+                <button
+                  v-for="tag in tagColumns[0]"
+                  :key="tag.id"
+                  type="button"
+                  class="btn btn-sm w-100 mb-2 text-start"
+                  :class="selectedTags.includes(tag.name) ? 'btn-primary' : 'btn-outline-secondary'"
+                  @click="toggleTag(tag.name)"
+                >
+                  {{ tag.name }}
+                </button>
+              </div>
+              <div class="col-6">
+                <button
+                  v-for="tag in tagColumns[1]"
+                  :key="tag.id"
+                  type="button"
+                  class="btn btn-sm w-100 mb-2 text-start"
+                  :class="selectedTags.includes(tag.name) ? 'btn-primary' : 'btn-outline-secondary'"
+                  @click="toggleTag(tag.name)"
+                >
+                  {{ tag.name }}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- 提交按钮 -->
-      <div class="d-grid">
+      <div class="d-grid mt-4">
         <button type="submit" class="btn btn-primary btn-lg" :disabled="store.isLoading">
           <span v-if="store.isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          {{ store.isLoading ? ' 计算中...' : '获取推荐' }}
+          {{ store.isLoading ? ' 计算中...' : '获取智能推荐' }}
         </button>
       </div>
     </form>
   </div>
 </template>
+
+<style scoped>
+.filter-card {
+  background-color: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px solid #e9ecef;
+}
+</style>

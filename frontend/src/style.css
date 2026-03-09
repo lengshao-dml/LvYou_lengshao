@@ -21,3 +21,22 @@ body {
     border: none;
     border-radius: 0.75rem;
 }
+
+.btn-orange {
+    color: #fff !important;
+    background-color: #f97316 !important;
+    border-color: #f97316 !important;
+}
+
+.btn-orange:hover {
+    background-color: #ea580c !important;
+    border-color: #dd520b !important;
+}
+
+.badge-score {
+    color: #f97316;
+    background-color: rgba(249, 115, 22, 0.1);
+    padding: 0.35em 0.65em;
+    font-weight: 700;
+    border-radius: var(--bs-border-radius-pill);
+}

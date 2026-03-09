@@ -8,11 +8,17 @@ defineProps({
 </script>
 
 <template>
-  <div class="card h-100 shadow-sm recommendation-card">
+  <div class="card h-100 shadow-sm recommendation-card overflow-hidden">
+    <div class="overflow-hidden" style="height: 180px;">
+      <img :src="`https://picsum.photos/seed/${recommendation.cityId}/800/600`" class="card-img-top" alt="City image">
+    </div>
     <div class="card-body d-flex flex-column">
       <div class="d-flex justify-content-between align-items-start mb-2">
         <h5 class="card-title mb-0 fw-bold">{{ recommendation.name }}</h5>
-        <span class="badge bg-success-subtle text-success-emphasis rounded-pill fs-6">{{ recommendation.score.toFixed(1) }} 分</span>
+        <span 
+          class="badge rounded-pill fs-6" 
+          style="color: #f97316; background-color: rgba(249, 115, 22, 0.1);"
+        >{{ recommendation.score.toFixed(1) }} 分</span>
       </div>
       <h6 class="card-subtitle mb-3 text-body-secondary">{{ recommendation.province }}</h6>
 
@@ -48,5 +54,11 @@ defineProps({
 }
 .card-title {
   color: #343a40;
+}
+.card-img-top {
+  transition: transform 0.5s ease;
+}
+.recommendation-card:hover .card-img-top {
+  transform: scale(1.1);
 }
 </style>

@@ -1,11 +1,16 @@
 import { defineStore } from 'pinia';
-import { getTags, getRecommendations } from '@/api';
+import { getTags, getRecommendations, getCityByName } from '@/api';
 
 export const useRecommendationStore = defineStore('recommendation', {
   state: () => ({
     tags: [],
+    // 推荐结果
     recommendations: [],
-    isLoading: false,
+    // 搜索结果
+    searchedCities: [], 
+    
+    isLoading: false, // 用于推荐
+    isSearching: false, // 用于城市搜索
     error: null,
   }),
 
@@ -27,7 +32,8 @@ export const useRecommendationStore = defineStore('recommendation', {
     async fetchRecommendations(request) {
       this.isLoading = true;
       this.error = null;
-      this.recommendations = []; // 清空旧结果
+      this.recommendations = [];
+      this.searchedCities = []; // 清空搜索结果
       try {
         const response = await getRecommendations(request);
         this.recommendations = response.data;
@@ -38,5 +44,28 @@ export const useRecommendationStore = defineStore('recommendation', {
         this.isLoading = false;
       }
     },
+
+    async fetchCityByName(cityName) {
+      this.isSearching = true;
+      this.error = null;
+      this.recommendations = []; // 清空推荐结果
+      this.searchedCities = [];
+      try {
+        const response = await getCityByName(cityName);
+        this.searchedCities = response.data;
+        if (this.searchedCities.length === 0) {
+            this.error = `未找到与“${cityName}”相关的城市。`;
+        }
+      } catch (err) {
+        if (err.response && err.response.status === 404) {
+          this.error = `未找到与“${cityName}”相关的城市。`;
+        } else {
+          this.error = '搜索城市失败，请稍后重试。';
+        }
+        console.error(err);
+      } finally {
+        this.isSearching = false;
+      }
+    }
   },
 });

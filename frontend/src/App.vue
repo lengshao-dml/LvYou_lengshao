@@ -3,10 +3,13 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-  <header>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <header class="sticky-top">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm">
       <div class="container">
-        <RouterLink class="navbar-brand" to="/">旅游推荐系统</RouterLink>
+        <RouterLink class="navbar-brand" to="/">
+          <i class="bi bi-map-fill text-primary"></i>
+          <span class="fw-bold ms-2">旅城</span>
+        </RouterLink>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -27,7 +30,7 @@ import { RouterLink, RouterView } from 'vue-router'
     </nav>
   </header>
 
-  <main class="container mt-4">
+  <main>
     <RouterView />
   </main>
 </template>
