@@ -27,11 +27,11 @@ public class WeatherService {
             Thread.currentThread().interrupt();
         }
 
-        // 模拟返回随机天气
-        String[] weathers = {"晴, 15-25°C", "多云, 18-26°C", "小雨, 12-18°C", "晴转多云, 16-24°C"};
+        // 模拟返回随机天气类型
+        String[] weathers = {"晴", "多云", "小雨", "大雨", "雪"};
         int index = random.nextInt(weathers.length);
         
-        System.out.println("INFO: Calling MOCK Weather API for " + city.getName() + " on " + date);
+        System.out.println("INFO: Calling MOCK Weather API for " + city.getName() + " on " + date + ". Result: " + weathers[index]);
 
         return weathers[index];
     }

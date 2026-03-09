@@ -1,0 +1,23 @@
+:root {
+  --bs-primary-rgb: 8, 102, 255;
+  --bs-secondary-rgb: 108, 117, 125;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  background-color: #f4f7f9;
+  color: #333;
+}
+
+/* 覆盖 Bootstrap 的一些默认样式，使其更柔和 */
+.btn-primary {
+    --bs-btn-bg: #0866ff;
+    --bs-btn-border-color: #0866ff;
+    --bs-btn-hover-bg: #0052cc;
+    --bs-btn-hover-border-color: #0052cc;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+}

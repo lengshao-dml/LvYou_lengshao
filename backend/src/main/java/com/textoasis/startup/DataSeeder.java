@@ -5,6 +5,7 @@ import com.opencsv.exceptions.CsvValidationException;
 import com.textoasis.model.City;
 import com.textoasis.model.CityFeature;
 import com.textoasis.model.Tag;
+import com.textoasis.model.Attraction;
 import com.textoasis.repository.CityRepository;
 import com.textoasis.repository.TagRepository;
 import jakarta.transaction.Transactional;
@@ -86,15 +87,29 @@ public class DataSeeder implements CommandLineRunner {
                 city.setFeatures(new HashSet<>());
                 city.setHotnessScore(0);
 
-                // 为每个标签下的描述创建CityFeature
+                // 为每个标签下的描述创建CityFeature和Attractions
                 for (int i = 1; i <= 10; i++) {
-                    String description = line[i];
-                    if (description != null && !description.trim().isEmpty()) {
+                    String attractionsString = line[i];
+                    if (attractionsString != null && !attractionsString.trim().isEmpty()) {
                         Tag tag = tagCache.get(headers[i]);
                         CityFeature feature = new CityFeature();
                         feature.setCity(city);
                         feature.setTag(tag);
-                        feature.setDescription(description);
+
+                        // 按斜杠分割多个景点
+                        String[] attractionParts = attractionsString.split("/");
+                        for (String part : attractionParts) {
+                            // 使用正则表达式解析景点名称和描述
+                            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("([^（]+)（([^）]+)）");
+                            java.util.regex.Matcher matcher = pattern.matcher(part.trim());
+                            if (matcher.find()) {
+                                Attraction attraction = new Attraction();
+                                attraction.setName(matcher.group(1));
+                                attraction.setDescription(matcher.group(2));
+                                attraction.setCityFeature(feature);
+                                feature.getAttractions().add(attraction);
+                            }
+                        }
                         city.getFeatures().add(feature);
                     }
                 }

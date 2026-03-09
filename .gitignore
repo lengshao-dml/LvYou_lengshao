@@ -43,3 +43,6 @@ application-local.properties
 ######################
 *.swp
 *.tmp
+
+# H2 Database
+/backend/data/

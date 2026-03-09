@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -30,9 +32,8 @@ public class CityFeature {
     @JoinColumn(name = "tag_id", nullable = false)
     private Tag tag;
 
-    @Lob
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @OneToMany(mappedBy = "cityFeature", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Attraction> attractions = new HashSet<>();
 
     @CreationTimestamp
     @Column(updatable = false, name = "create_time")
