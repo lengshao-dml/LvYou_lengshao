@@ -1,5 +1,15 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
+import { useAuthStore } from '@/store/auth';
+import { useRouter } from 'vue-router';
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
+};
 </script>
 
 <template>
@@ -18,12 +28,19 @@ import { RouterLink, RouterView } from 'vue-router'
             <li class="nav-item">
               <RouterLink class="nav-link" to="/">主页</RouterLink>
             </li>
-            <li class="nav-item">
-              <RouterLink class="nav-link" to="/login">登录</RouterLink>
-            </li>
-            <li class="nav-item">
-              <RouterLink class="nav-link" to="/register">注册</RouterLink>
-            </li>
+            <template v-if="!authStore.token">
+              <li class="nav-item">
+                <RouterLink class="nav-link" to="/login">登录</RouterLink>
+              </li>
+              <li class="nav-item">
+                <RouterLink class="nav-link" to="/register">注册</RouterLink>
+              </li>
+            </template>
+            <template v-else>
+               <li class="nav-item">
+                 <a href="#" class="nav-link" @click.prevent="handleLogout">退出</a>
+              </li>
+            </template>
           </ul>
         </div>
       </div>

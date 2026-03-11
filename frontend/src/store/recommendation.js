@@ -1,31 +1,32 @@
 import { defineStore } from 'pinia';
-import { getTags, getRecommendations, getCityByName } from '@/api';
+import { getRecommendations, getCityByName, getPopularCities } from '@/api';
 
 export const useRecommendationStore = defineStore('recommendation', {
   state: () => ({
-    tags: [],
     // 推荐结果
     recommendations: [],
+    // 热门城市
+    popularCities: [],
     // 搜索结果
     searchedCities: [], 
     
     isLoading: false, // 用于推荐
     isSearching: false, // 用于城市搜索
+    isFetchingPopular: false, // 用于热门城市
     error: null,
   }),
 
   actions: {
-    async fetchTags() {
-      this.isLoading = true;
-      this.error = null;
+    async fetchPopularCities() {
+      this.isFetchingPopular = true;
       try {
-        const response = await getTags();
-        this.tags = response.data;
+        const response = await getPopularCities();
+        this.popularCities = response.data;
       } catch (err) {
-        this.error = '获取标签失败，请稍后重试。';
-        console.error(err);
+        console.error("获取热门城市失败", err);
+        // 这里可以设置一个独立的错误状态
       } finally {
-        this.isLoading = false;
+        this.isFetchingPopular = false;
       }
     },
 

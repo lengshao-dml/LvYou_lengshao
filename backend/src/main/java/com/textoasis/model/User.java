@@ -1,7 +1,10 @@
 package com.textoasis.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,8 +14,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
-@Data
+@Getter
+@Setter
+@ToString(exclude = "interestTags")
+@EqualsAndHashCode(exclude = "interestTags")
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -37,6 +44,9 @@ public class User implements UserDetails {
 
     @Column
     private String role;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserInterestTag> interestTags;
 
     @CreationTimestamp
     @Column(updatable = false, name = "create_time")

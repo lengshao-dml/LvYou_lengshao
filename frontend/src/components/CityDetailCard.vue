@@ -1,14 +1,21 @@
 <script setup>
+import { useAuthStore } from '@/store/auth';
+
 defineProps({
   city: {
     type: Object,
     required: true
   }
 });
+
+const authStore = useAuthStore();
+const handleClick = (cityId) => {
+  authStore.logClick(cityId);
+};
 </script>
 
 <template>
-  <div class="card shadow-lg">
+  <div class="card shadow-lg" @click="handleClick(city.id)">
     <div class="card-header bg-primary text-white">
       <h2 class="mb-0">{{ city.name }} - {{ city.province }}</h2>
     </div>

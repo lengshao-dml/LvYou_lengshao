@@ -22,15 +22,13 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword());
-        String token = authenticationService.register(user);
+        String token = authenticationService.register(request);
         return ResponseEntity.ok(new AuthenticationResponse(token));
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(@RequestBody LoginRequest request) {
+        // Here we can create a temporary User object or have the service accept the DTO
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(request.getPassword());

@@ -2,21 +2,16 @@ package com.textoasis.service;
 
 import com.textoasis.dto.RecommendationDto;
 import com.textoasis.dto.RecommendationRequestDto;
-import com.textoasis.model.City;
-import com.textoasis.model.CityFeature;
-import com.textoasis.model.Tag;
+import com.textoasis.model.*;
 import com.textoasis.repository.CityRepository;
 import com.textoasis.repository.TagRepository;
 import com.textoasis.util.HaversineDistanceUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,26 +32,51 @@ public class RecommendationService {
     private static final int DISTANCE_DECAY_RATE = 10; // 每10公里扣1分
     private static final int MAX_WEATHER_SCORE = 20;
 
-    public List<RecommendationDto> recommend(RecommendationRequestDto request) {
+    @Transactional(readOnly = true)
+    public List<RecommendationDto> recommend(RecommendationRequestDto request, Optional<User> userOpt) {
         // 1. 获取出发地城市信息
         City departureCity = cityRepository.findByName(request.getDepartureCity())
                 .orElseThrow(() -> new IllegalArgumentException("Departure city not found: " + request.getDepartureCity()));
 
-        // 2. 获取所有标签并创建索引映射，用于向量化
+        // 2. 确定用于推荐的兴趣标签和权重
+        final Map<String, Double> finalUserInterestMap;
+        // 优先使用请求中明确指定的兴趣标签
+        if (request.getInterestTags() != null && !request.getInterestTags().isEmpty()) {
+            finalUserInterestMap = new HashMap<>();
+            for (String tagName : request.getInterestTags()) {
+                finalUserInterestMap.put(tagName, 1.0); // 显式请求的标签权重为1.0
+            }
+        } else if (userOpt.isPresent()) {
+            // 如果请求中没有指定标签，且用户已登录，则使用用户画像中的兴趣标签
+            User user = userOpt.get();
+            if (user.getInterestTags() != null && !user.getInterestTags().isEmpty()) {
+                finalUserInterestMap = user.getInterestTags().stream()
+                        .collect(Collectors.toMap(
+                                userInterestTag -> userInterestTag.getTag().getName(),
+                                UserInterestTag::getWeight
+                        ));
+            } else {
+                finalUserInterestMap = Collections.emptyMap();
+            }
+        } else {
+            finalUserInterestMap = Collections.emptyMap();
+        }
+
+        // 3. 获取所有标签并创建索引映射，用于向量化
         List<String> allTagNames = tagRepository.findAll().stream().map(Tag::getName).toList();
         Map<String, Integer> tagIndexMap = new HashMap<>();
         for (int i = 0; i < allTagNames.size(); i++) {
             tagIndexMap.put(allTagNames.get(i), i);
         }
 
-        // 3. 预筛选，缩小候选城市范围
+        // 4. 预筛选，缩小候选城市范围
         List<City> candidateCities = getCandidateCities(departureCity, request.getDistanceScope());
 
-        // 4. 对候选城市计算得分
+        // 5. 对候选城市计算得分
         List<RecommendationDto> recommendations = candidateCities.stream()
                 .map(city -> {
-                    // 5. 为每个城市计算各项原始得分
-                    double tagScore = calculateCosineSimilarityScore(city, new HashSet<>(request.getInterestTags()), tagIndexMap);
+                    // 6. 为每个城市计算各项原始得分
+                    double tagScore = calculateCosineSimilarityScore(city, finalUserInterestMap, tagIndexMap);
                     double distance = HaversineDistanceUtil.calculate(
                             departureCity.getLatitude().doubleValue(), departureCity.getLongitude().doubleValue(),
                             city.getLatitude().doubleValue(), city.getLongitude().doubleValue()
@@ -65,7 +85,7 @@ public class RecommendationService {
                     String weather = weatherService.getWeather(city, request.getTravelDate());
                     double weatherScore = calculateWeatherScore(weather);
 
-                    // 6. 归一化并加权计算总分
+                    // 7. 归一化并加权计算总分
                     double normalizedTagScore = (MAX_TAG_SCORE > 0) ? (tagScore / MAX_TAG_SCORE) : 0;
                     double normalizedDistanceScore = (MAX_DISTANCE_SCORE > 0) ? (distanceScore / MAX_DISTANCE_SCORE) : 0;
                     double normalizedWeatherScore = (MAX_WEATHER_SCORE > 0) ? (weatherScore / MAX_WEATHER_SCORE) : 0;
@@ -81,14 +101,14 @@ public class RecommendationService {
                     dto.setScore(Math.round(totalScore * 100.0) / 100.0); // 保留两位小数
                     dto.setDistanceKm(Math.round(distance * 100.0) / 100.0);
                     dto.setWeatherForecast(weather);
-                    dto.setMatchedTags(getMatchedTags(city, new HashSet<>(request.getInterestTags())));
+                    dto.setMatchedTags(getMatchedTags(city, finalUserInterestMap.keySet()));
                     dto.setLatitude(city.getLatitude());
                     dto.setLongitude(city.getLongitude());
                     return dto;
                 })
                 .collect(Collectors.toList());
 
-        // 7. 按总分降序排序并返回Top 10
+        // 8. 按总分降序排序并返回Top 10
         return recommendations.stream()
                 .sorted(Comparator.comparingDouble(RecommendationDto::getScore).reversed())
                 .limit(10)
@@ -126,8 +146,8 @@ public class RecommendationService {
         }
     }
 
-    private double calculateCosineSimilarityScore(City city, Set<String> interestTags, Map<String, Integer> tagIndexMap) {
-        if (interestTags == null || interestTags.isEmpty()) {
+    private double calculateCosineSimilarityScore(City city, Map<String, Double> userInterestMap, Map<String, Integer> tagIndexMap) {
+        if (userInterestMap == null || userInterestMap.isEmpty()) {
             return 0;
         }
 
@@ -135,11 +155,11 @@ public class RecommendationService {
         double[] userVector = new double[vectorSize];
         double[] cityVector = new double[vectorSize];
 
-        // 构建用户兴趣向量 (选择为1, 未选择为0)
-        for (String interestTag : interestTags) {
-            Integer index = tagIndexMap.get(interestTag);
+        // 构建用户兴趣向量 (使用权重)
+        for (Map.Entry<String, Double> entry : userInterestMap.entrySet()) {
+            Integer index = tagIndexMap.get(entry.getKey());
             if (index != null) {
-                userVector[index] = 1.0;
+                userVector[index] = entry.getValue();
             }
         }
 
@@ -147,7 +167,8 @@ public class RecommendationService {
         for (CityFeature feature : city.getFeatures()) {
             Integer index = tagIndexMap.get(feature.getTag().getName());
             if (index != null) {
-                cityVector[index] = feature.getAttractions() != null ? feature.getAttractions().size() : 0;
+                // 如果一个城市有多个同类型景点，可以累加或设为1，这里简单设为1表示拥有该特征
+                cityVector[index] = 1.0;
             }
         }
 

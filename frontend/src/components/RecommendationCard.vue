@@ -1,14 +1,23 @@
 <script setup>
+import { useAuthStore } from '@/store/auth';
+
 defineProps({
   recommendation: {
     type: Object,
     required: true
   }
 });
+
+const authStore = useAuthStore();
+const handleClick = (cityId) => {
+  authStore.logClick(cityId);
+  // 未来可以加入跳转到城市详情页的逻辑
+  // e.g., router.push(`/city/${cityId}`);
+};
 </script>
 
 <template>
-  <div class="card h-100 shadow-sm recommendation-card overflow-hidden">
+  <div class="card h-100 shadow-sm recommendation-card overflow-hidden" @click="handleClick(recommendation.cityId)">
     <div class="overflow-hidden" style="height: 180px;">
       <img :src="`https://picsum.photos/seed/${recommendation.cityId}/800/600`" class="card-img-top" alt="City image">
     </div>

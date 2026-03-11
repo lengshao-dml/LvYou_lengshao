@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRecommendationStore } from '@/store/recommendation';
+import { useMetaStore } from '@/store/meta';
 
-const store = useRecommendationStore();
+const recommendationStore = useRecommendationStore();
+const metaStore = useMetaStore();
 
 // 表单的本地状态
 const departureCity = ref('合肥市'); // 默认值
@@ -10,17 +12,17 @@ const selectedTags = ref([]);
 const travelDate = ref(new Date().toISOString().split('T')[0]); // 默认今天
 const distanceScope = ref('ANY'); // 默认"不限"
 
-// 组件加载时，自动获取标签列表
+// 组件加载时，自动获取标签和城市列表
 onMounted(() => {
-  store.fetchTags();
+  metaStore.fetchMeta();
 });
 
 // 将标签分为两列的计算属性
 const tagColumns = computed(() => {
-  const midpoint = Math.ceil(store.tags.length / 2);
+  const midpoint = Math.ceil(metaStore.tags.length / 2);
   return [
-    store.tags.slice(0, midpoint),
-    store.tags.slice(midpoint)
+    metaStore.tags.slice(0, midpoint),
+    metaStore.tags.slice(midpoint)
   ];
 });
 
@@ -42,7 +44,7 @@ const handleSubmit = () => {
     travelDate: travelDate.value,
     distanceScope: distanceScope.value,
   };
-  store.fetchRecommendations(request);
+  recommendationStore.fetchRecommendations(request);
 };
 </script>
 
@@ -125,9 +127,9 @@ const handleSubmit = () => {
 
       <!-- 提交按钮 -->
       <div class="d-grid mt-4">
-        <button type="submit" class="btn btn-primary btn-lg" :disabled="store.isLoading">
-          <span v-if="store.isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          {{ store.isLoading ? ' 计算中...' : '获取智能推荐' }}
+        <button type="submit" class="btn btn-primary btn-lg" :disabled="recommendationStore.isLoading">
+          <span v-if="recommendationStore.isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          {{ recommendationStore.isLoading ? ' 计算中...' : '获取智能推荐' }}
         </button>
       </div>
     </form>

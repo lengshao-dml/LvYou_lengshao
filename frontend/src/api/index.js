@@ -26,9 +26,22 @@ export const getRecommendations = (recommendationRequest) => {
   return apiClient.post('/recommend', recommendationRequest);
 };
 
-// 如果需要，未来可以添加更多API调用
-// export const getCities = () => apiClient.get('/cities');
+export const getCities = () => {
+    return apiClient.get('/cities');
+};
 
 export const getCityByName = (name) => {
     return apiClient.get(`/city/${name}`);
+};
+
+export const getPopularCities = () => {
+    return apiClient.get('/cities/popular');
+};
+
+export const logClickEvent = (cityId, token) => {
+    return apiClient.post('/events/click', { cityId }, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
 };
