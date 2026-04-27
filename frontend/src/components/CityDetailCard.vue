@@ -1,21 +1,25 @@
 <script setup>
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 
-defineProps({
+const props = defineProps({
   city: {
     type: Object,
     required: true
   }
 });
 
+const router = useRouter();
 const authStore = useAuthStore();
-const handleClick = (cityId) => {
-  authStore.logClick(cityId);
+
+const handleClick = () => {
+  authStore.logClick(props.city.id);
+  router.push({ name: 'city-detail', params: { name: props.city.name } });
 };
 </script>
 
 <template>
-  <div class="card shadow-lg" @click="handleClick(city.id)">
+  <div class="card shadow-lg" role="button" @click="handleClick">
     <div class="card-header bg-primary text-white">
       <h2 class="mb-0">{{ city.name }} - {{ city.province }}</h2>
     </div>

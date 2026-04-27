@@ -10,8 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +22,7 @@ public class RecommendationService {
     private final CityRepository cityRepository;
     private final WeatherService weatherService;
     private final TagRepository tagRepository;
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     // --- 评分权重配置 ---
     private static final double W_TAGS = 0.6;     // 标签权重
@@ -34,13 +36,23 @@ public class RecommendationService {
 
     @Transactional(readOnly = true)
     public List<RecommendationDto> recommend(RecommendationRequestDto request, Optional<User> userOpt) {
+        // 0. 解析日期
+        Date travelDate;
+        try {
+            travelDate = (request.getTravelDate() != null && !request.getTravelDate().isEmpty())
+                    ? dateFormat.parse(request.getTravelDate())
+                    : new Date(); // 如果不提供日期，则默认为今天
+        } catch (ParseException e) {
+            throw new IllegalArgumentException("Invalid date format for travelDate. Please use YYYY-MM-DD.");
+        }
+
         // 1. 获取出发地城市信息
         City departureCity = cityRepository.findByName(request.getDepartureCity())
                 .orElseThrow(() -> new IllegalArgumentException("Departure city not found: " + request.getDepartureCity()));
 
         // 2. 确定用于推荐的兴趣标签和权重
         final Map<String, Double> finalUserInterestMap;
-        // 优先使用请求中明确指定的兴趣标签
+        // 优先使用请求中明确指定的兴趣标签（非空列表才覆盖）
         if (request.getInterestTags() != null && !request.getInterestTags().isEmpty()) {
             finalUserInterestMap = new HashMap<>();
             for (String tagName : request.getInterestTags()) {
@@ -73,6 +85,7 @@ public class RecommendationService {
         List<City> candidateCities = getCandidateCities(departureCity, request.getDistanceScope());
 
         // 5. 对候选城市计算得分
+        final Date finalTravelDate = travelDate; // 确保在lambda中可用
         List<RecommendationDto> recommendations = candidateCities.stream()
                 .map(city -> {
                     // 6. 为每个城市计算各项原始得分
@@ -82,8 +95,9 @@ public class RecommendationService {
                             city.getLatitude().doubleValue(), city.getLongitude().doubleValue()
                     );
                     double distanceScore = calculateDistanceScore(distance);
-                    String weather = weatherService.getWeather(city, request.getTravelDate());
-                    double weatherScore = calculateWeatherScore(weather);
+
+                    Optional<WeatherForecast> forecastOpt = weatherService.getWeatherForecast(city, finalTravelDate);
+                    double weatherScore = calculateWeatherScore(forecastOpt);
 
                     // 7. 归一化并加权计算总分
                     double normalizedTagScore = (MAX_TAG_SCORE > 0) ? (tagScore / MAX_TAG_SCORE) : 0;
@@ -100,7 +114,7 @@ public class RecommendationService {
                     dto.setProvince(city.getProvince());
                     dto.setScore(Math.round(totalScore * 100.0) / 100.0); // 保留两位小数
                     dto.setDistanceKm(Math.round(distance * 100.0) / 100.0);
-                    dto.setWeatherForecast(weather);
+                    dto.setWeatherForecast(forecastOpt.map(WeatherForecast::getText).orElse("未知"));
                     dto.setMatchedTags(getMatchedTags(city, finalUserInterestMap.keySet()));
                     dto.setLatitude(city.getLatitude());
                     dto.setLongitude(city.getLongitude());
@@ -196,16 +210,113 @@ public class RecommendationService {
         return Math.max(0, score);
     }
 
-    private double calculateWeatherScore(String weather) {
-        double weatherFactor = switch (weather) {
-            case "晴" -> 1.0;
-            case "多云" -> 0.8;
-            case "小雨" -> 0.4;
-            case "雪" -> 0.3;
-            case "大雨" -> 0.1;
-            default -> 0.5; // 其他天气给一个中间值
-        };
-        return MAX_WEATHER_SCORE * weatherFactor;
+    /**
+     * 和风天气官方 textDay 枚举值 -> 基础评分映射。
+     * 评分 1-20，越高越适合出游。
+     * 精确匹配，不再使用 contains 模糊匹配。
+     */
+    private static final Map<String, Integer> WEATHER_BASE_SCORES = buildWeatherScores();
+
+    private static Map<String, Integer> buildWeatherScores() {
+        Map<String, Integer> m = new LinkedHashMap<>();
+        // 未知 / 其他（兜底）
+        // 保持 key 为 null 占位，在查找时用 getOrDefault
+
+        // 严重恶劣（1-3分）
+        int SEVERE = 2;
+        for (String s : new String[]{"特大暴雨", "大暴雨到特大暴雨", "大暴雨", "暴雨到大暴雨", "暴雨",
+                "极端降雨", "强沙尘暴", "强雷阵雨伴有冰雹", "雷阵雨伴有冰雹",
+                "强雷阵雨", "特强浓雾", "严重霾",
+                "暴雪", "大到暴雪"}) m.put(s, SEVERE);
+
+        // 恶劣天气（4-6分）
+        int BAD = 5;
+        for (String s : new String[]{"大到暴雨", "中到大雨", "大到暴雪",
+                "大雨", "大雪",
+                "浓雾", "重度霾", "强浓雾", "大雾",
+                "沙尘暴", "浮尘", "扬沙"}) m.put(s, BAD);
+
+        // 一般降水 / 轻度影响（7-10分）
+        int MODERATE = 8;
+        for (String s : new String[]{"中到大雪", "中雨", "中雪",
+                "小到中雨", "小到中雪",
+                "雨夹雪",
+                "雷阵雨", "冻雨",
+                "强阵雨",
+                "中度霾", "霾",
+                "雨雪天气", "雪"}) m.put(s, MODERATE);
+
+        // 轻微影响（11-14分）
+        int LIGHT = 12;
+        for (String s : new String[]{"小雨", "小雪", "毛毛雨/细雨",
+                "阵雨", "阵雪", "阵雨夹雪",
+                "薄雾", "雾",
+                "冷"}) m.put(s, LIGHT);
+
+        // 阴天（15-16分）
+        m.put("阴", 16);
+
+        // 云量较多（17-18分）
+        for (String s : new String[]{"多云", "少云", "晴间多云"}) m.put(s, 18);
+
+        // 晴好（19-20分）
+        m.put("晴", 20);
+
+        // 热 / 雨（宽泛值）
+        m.put("热", 14);
+        m.put("雨", 6);
+
+        return Collections.unmodifiableMap(m);
+    }
+
+    private double calculateWeatherScore(Optional<WeatherForecast> forecastOpt) {
+        if (forecastOpt.isEmpty()) {
+            return MAX_WEATHER_SCORE * 0.5; // 如果没有天气数据，返回一个中性分数
+        }
+        WeatherForecast forecast = forecastOpt.get();
+
+        // 1. 基础分：精确匹配和风官方枚举值
+        String weatherText = forecast.getText();
+        double baseScore = WEATHER_BASE_SCORES.getOrDefault(weatherText, 10);
+
+        // 2. 温度惩罚系数
+        double tempFactor = 1.0;
+        try {
+            int avgTemp = (Integer.parseInt(forecast.getTempMax()) + Integer.parseInt(forecast.getTempMin())) / 2;
+            if (avgTemp > 32 || avgTemp < 0) {
+                tempFactor = 0.8; // 过热或过冷
+            }
+        } catch (NumberFormatException e) {
+            // 忽略温度解析错误
+        }
+        
+        // 3. 降水惩罚系数
+        double precipFactor = 1.0;
+        try {
+            double precip = Double.parseDouble(forecast.getPrecipitation());
+            if (precip > 5.0) {
+                precipFactor = 0.7; // 降水较多
+            } else if (precip > 0.1) {
+                precipFactor = 0.9;
+            }
+        } catch (NumberFormatException | NullPointerException e) {
+            // 忽略降水解析错误
+        }
+
+        // 4. 能见度加成/惩罚系数
+        double visFactor = 1.0;
+        try {
+            int visibility = Integer.parseInt(forecast.getVisibility());
+            if (visibility < 5) {
+                visFactor = 0.8; // 能见度差
+            } else if (visibility > 15) {
+                visFactor = 1.1; // 能见度极佳
+            }
+        } catch (NumberFormatException | NullPointerException e) {
+            // 忽略能见度解析错误
+        }
+
+        return Math.min(MAX_WEATHER_SCORE, baseScore * tempFactor * precipFactor * visFactor);
     }
 
     private Set<String> getMatchedTags(City city, Set<String> interestTags) {

@@ -1,7 +1,5 @@
 package com.textoasis.startup;
 
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvValidationException;
 import com.textoasis.model.City;
 import com.textoasis.model.CityFeature;
 import com.textoasis.model.Tag;
@@ -14,14 +12,15 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -41,13 +40,65 @@ public class DataSeeder implements CommandLineRunner {
         loadCityData();
     }
 
-    private void loadCityData() throws IOException, CsvValidationException {
+    /**
+     * 手动解析CSV行，正确处理字段内包含逗号的情况。
+     * CSV标准：双引号包裹的字段中的逗号不作为分隔符，连续双引号转义。
+     * 兼容中文引号「」的情况。
+     */
+    private List<String> parseCsvLine(String line) {
+        List<String> fields = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        boolean inChineseQuotes = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            char next = i + 1 < line.length() ? line.charAt(i + 1) : 0;
+
+            // 处理英文双引号转义
+            if (c == '"' && !inChineseQuotes) {
+                if (inQuotes && next == '"') {
+                    // 转义的引号
+                    current.append('"');
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+                continue;
+            }
+
+            // 处理中文引号（兼容「」作为引号对）
+            if (c == '「') {
+                inChineseQuotes = true;
+                current.append(c);
+                continue;
+            }
+            if (c == '」') {
+                inChineseQuotes = false;
+                current.append(c);
+                continue;
+            }
+
+            // 逗号分隔：仅在不在引号内时
+            if (c == ',' && !inQuotes && !inChineseQuotes) {
+                fields.add(current.toString().trim());
+                current = new StringBuilder();
+            } else {
+                current.append(c);
+            }
+        }
+        fields.add(current.toString().trim());
+        return fields;
+    }
+
+    private void loadCityData() throws IOException {
         // 将标签标题和预先创建的Tag实体映射起来，方便快速查找
         Map<String, Tag> tagCache = new HashMap<>();
 
         // 预期CSV文件中的标题行 (16列)
-        String[] headers = {"city","自然风光","历史文化","主题乐园","城市观光","美食文化","海滨休闲","休闲康养","户外运动","宗教信仰","节庆民俗","province","pinyin","abbr","latitude","longitude"};
-        for (int i = 1; i <= 10; i++) { // 循环创建“自然风光”到“节庆民俗”等标签
+        String[] headers = {"city", "自然风光", "历史文化", "主题乐园", "城市观光", "美食文化", "海滨休闲",
+                "休闲康养", "户外运动", "宗教信仰", "节庆民俗", "province", "pinyin", "abbr", "latitude", "longitude"};
+        for (int i = 1; i <= 10; i++) {
             final String tagName = headers[i];
             Tag tag = tagRepository.findByName(tagName).orElseGet(() -> {
                 Tag newTag = new Tag();
@@ -58,63 +109,117 @@ public class DataSeeder implements CommandLineRunner {
             tagCache.put(tagName, tag);
         }
 
-        // 从classpath下的data/cities.csv读取文件
+        // 从classpath下的data/cities.csv读取文件，逐行手动解析
         ClassPathResource resource = new ClassPathResource("data/cities.csv");
-        try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
-            String[] line;
-            reader.readNext(); // 跳过标题行
+        List<City> cities = new ArrayList<>();
+        int totalCities = 0;
+        int skipped = 0;
 
-            while ((line = reader.readNext()) != null) {
-                // 如果城市名称为空，则视为无效行并跳过
-                if (line.length < 16 || line[0] == null || line[0].trim().isEmpty()) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
+            String rawLine;
+            reader.readLine(); // 跳过标题行
+
+            while ((rawLine = reader.readLine()) != null) {
+                if (rawLine.trim().isEmpty()) {
+                    continue;
+                }
+
+                // 手动解析CSV行，正确处理字段内的逗号和引号
+                List<String> fields = parseCsvLine(rawLine);
+
+                // 检查字段数是否足够
+                if (fields.size() < 16) {
+                    System.out.println("WARN: Skipping city, expected 16 fields but got "
+                            + fields.size() + ": " + fields.get(0));
+                    skipped++;
                     continue;
                 }
 
                 // 检查经纬度是否存在
-                if (line[14] == null || line[14].trim().isEmpty() || line[15] == null || line[15].trim().isEmpty()) {
-                    System.out.println("WARN: Skipping city due to missing geo-data: " + line[0]);
+                String latStr = fields.get(14).trim();
+                String lngStr = fields.get(15).trim();
+                if (latStr.isEmpty() || lngStr.isEmpty()) {
+                    System.out.println("WARN: Skipping city due to missing geo-data: " + fields.get(0));
+                    skipped++;
                     continue;
                 }
 
-                // 创建并保存City实体
+                // 创建City实体
                 City city = new City();
-                city.setName(line[0]);
-                city.setProvince(line[11]);
-                city.setPinyin(line[12]);
-                city.setAbbr(line[13]);
-                city.setLatitude(new BigDecimal(line[14]));
-                city.setLongitude(new BigDecimal(line[15]));
+                city.setName(fields.get(0));
+                city.setProvince(fields.get(11));
+                city.setPinyin(fields.get(12));
+                city.setAbbr(fields.get(13));
+                city.setLatitude(new BigDecimal(latStr));
+                city.setLongitude(new BigDecimal(lngStr));
                 city.setFeatures(new HashSet<>());
                 city.setHotnessScore(0);
+                int totalAttractions = 0;
 
                 // 为每个标签下的描述创建CityFeature和Attractions
                 for (int i = 1; i <= 10; i++) {
-                    String attractionsString = line[i];
-                    if (attractionsString != null && !attractionsString.trim().isEmpty()) {
-                        Tag tag = tagCache.get(headers[i]);
-                        CityFeature feature = new CityFeature();
-                        feature.setCity(city);
-                        feature.setTag(tag);
-
-                        // 按斜杠分割多个景点
-                        String[] attractionParts = attractionsString.split("/");
-                        for (String part : attractionParts) {
-                            // 使用正则表达式解析景点名称和描述
-                            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("([^（]+)（([^）]+)）");
-                            java.util.regex.Matcher matcher = pattern.matcher(part.trim());
-                            if (matcher.find()) {
-                                Attraction attraction = new Attraction();
-                                attraction.setName(matcher.group(1));
-                                attraction.setDescription(matcher.group(2));
-                                attraction.setCityFeature(feature);
-                                feature.getAttractions().add(attraction);
-                            }
-                        }
-                        city.getFeatures().add(feature);
+                    String attractionsString = fields.get(i);
+                    if (attractionsString == null || attractionsString.trim().isEmpty()) {
+                        continue;
                     }
+                    Tag tag = tagCache.get(headers[i]);
+                    if (tag == null) {
+                        continue;
+                    }
+
+                    CityFeature feature = new CityFeature();
+                    feature.setCity(city);
+                    feature.setTag(tag);
+                    feature.setAttractions(new HashSet<>());
+
+                    // 按斜杠分割多个景点
+                    String[] attractionParts = attractionsString.split("/");
+                    for (String part : attractionParts) {
+                        part = part.trim();
+                        if (part.isEmpty()) continue;
+
+                        // 使用正则表达式解析景点名称和描述：名称（描述）
+                        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("([^（]+)（([^）]+)）");
+                        java.util.regex.Matcher matcher = pattern.matcher(part);
+                        if (matcher.find()) {
+                            Attraction attraction = new Attraction();
+                            attraction.setName(matcher.group(1).trim());
+                            attraction.setDescription(matcher.group(2).trim());
+                            attraction.setCityFeature(feature);
+                            feature.getAttractions().add(attraction);
+                            totalAttractions++;
+                        } else {
+                            // fallback：没有括号描述时，把整段文本作为景点名
+                            Attraction attraction = new Attraction();
+                            attraction.setName(part);
+                            attraction.setDescription("");
+                            attraction.setCityFeature(feature);
+                            feature.getAttractions().add(attraction);
+                            totalAttractions++;
+                        }
+                    }
+                    city.getFeatures().add(feature);
                 }
-                cityRepository.save(city);
+
+                // 以景点总数作为初始热度分
+                city.setHotnessScore(totalAttractions);
+                cities.add(city);
+                totalCities++;
+
+                // 每100条批量flush一次，避免内存积压
+                if (cities.size() % 100 == 0) {
+                    cityRepository.saveAll(cities);
+                    cityRepository.flush();
+                    cities.clear();
+                }
+            }
+
+            // 保存剩余的城市
+            if (!cities.isEmpty()) {
+                cityRepository.saveAll(cities);
             }
         }
+
+        System.out.println("DataSeeder: Imported " + totalCities + " cities, skipped " + skipped + ".");
     }
 }

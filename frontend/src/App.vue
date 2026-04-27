@@ -6,6 +6,11 @@ import { useRouter } from 'vue-router';
 const authStore = useAuthStore();
 const router = useRouter();
 
+// 页面加载时，如有 token 则拉取用户信息（含常居地）
+if (authStore.token) {
+  authStore.fetchProfile();
+}
+
 const handleLogout = () => {
   authStore.logout();
   router.push('/login');

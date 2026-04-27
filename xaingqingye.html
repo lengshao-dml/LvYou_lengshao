@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成都 - 旅城智能旅游城市推荐系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Chart.js用于绘制曲线图 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 配置Tailwind自定义主题 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb', // 主色调-蓝色
+                        secondary: '#f97316', // 辅助色-橙色
+                        neutral: '#f8fafc', // 中性色-浅灰
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+            .btn-primary {
+                @apply bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-all;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white px-4 py-2 rounded-lg hover:bg-secondary/90 transition-all;
+            }
+            .weather-card {
+                @apply bg-white rounded-lg p-3 text-center shadow-sm hover:shadow-md transition-all;
+            }
+            .scenic-card {
+                @apply bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 导航栏 -->
+    <header class="sticky top-0 z-50 bg-white shadow-sm">
+        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-map-marker text-secondary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">旅城</h1>
+            </div>
+            
+            <!-- 桌面端导航 -->
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="index.html" class="text-gray-700 hover:text-primary font-medium">首页</a>
+                <a href="cities.html" class="text-gray-700 hover:text-primary font-medium">城市推荐</a>
+                <a href="recommend.html" class="text-gray-700 hover:text-primary font-medium">智能推荐</a>
+                <a href="contact.html" class="text-gray-700 hover:text-primary font-medium">联系我们</a>
+            </div>
+            
+            <!-- 移动端菜单按钮 -->
+            <button id="menuBtn" class="md:hidden text-gray-700 focus:outline-none">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+        </nav>
+        
+        <!-- 移动端导航菜单 -->
+        <div id="mobileMenu" class="md:hidden hidden bg-white border-t border-gray-100">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="index.html" class="py-2 text-gray-700 hover:text-primary font-medium">首页</a>
+                <a href="cities.html" class="py-2 text-gray-700 hover:text-primary font-medium">城市推荐</a>
+                <a href="recommend.html" class="py-2 text-gray-700 hover:text-primary font-medium">智能推荐</a>
+                <a href="contact.html" class="py-2 text-gray-700 hover:text-primary font-medium">联系我们</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 城市头部信息 -->
+    <section class="relative">
+        <!-- 城市背景图 -->
+        <div class="h-[50vh] min-h-[400px] bg-cover bg-center" style="background-image: url('https://picsum.photos/id/1015/1920/1080');">
+            <div class="absolute inset-0 bg-black/40"></div>
+            <!-- 城市基础信息 -->
+            <div class="container mx-auto px-4 h-full flex flex-col justify-end pb-8 relative z-10">
+                <div class="flex flex-wrap items-end justify-between">
+                    <div>
+                        <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-white mb-2">成都</h1>
+                        <div class="flex items-center space-x-4 text-white/90">
+                            <span><i class="fa fa-map-marker mr-1"></i>四川省 · 西南地区</span>
+                            <span><i class="fa fa-star mr-1 text-yellow-400"></i>9.2分</span>
+                            <span><i class="fa fa-users mr-1"></i>热门指数 98%</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        <button class="btn-secondary">
+                            <i class="fa fa-heart-o mr-1"></i> 收藏
+                        </button>
+                        <button class="btn-primary">
+                            <i class="fa fa-share-alt mr-1"></i> 分享
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 城市标签栏 -->
+        <div class="bg-white shadow-md sticky top-16 z-40">
+            <div class="container mx-auto px-4">
+                <div class="flex overflow-x-auto pb-2 pt-2 scrollbar-hide">
+                    <a href="#overview" class="px-4 py-2 text-primary border-b-2 border-primary font-medium whitespace-nowrap">城市概览</a>
+                    <a href="#weather" class="px-4 py-2 text-gray-600 hover:text-primary whitespace-nowrap">15天天气</a>
+                    <a href="#scenic" class="px-4 py-2 text-gray-600 hover:text-primary whitespace-nowrap">景点大全</a>
+                    <a href="#food" class="px-4 py-2 text-gray-600 hover:text-primary whitespace-nowrap">特色美食</a>
+                    <a href="#tips" class="px-4 py-2 text-gray-600 hover:text-primary whitespace-nowrap">旅行贴士</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 城市概览 -->
+    <section id="overview" class="py-8 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 城市介绍 -->
+                <div class="lg:col-span-2">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">城市介绍</h2>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        成都是四川省省会，简称“蓉”，别称蓉城、锦城，是国家历史文化名城，古蜀文明发祥地，中国十大古都之一。拥有都江堰、武侯祠、杜甫草堂、金沙遗址等众多名胜古迹和人文景观。
+                        成都自古有“天府之国”的美誉，是中国最佳旅游城市，以悠闲的生活节奏、丰富的美食文化、憨态可掬的大熊猫闻名于世。这里的生活节奏慢而舒适，街头巷尾都是烟火气息，
+                        无论是体验川剧变脸、品尝麻辣火锅，还是漫步宽窄巷子、锦里古街，都能感受到这座城市独特的魅力。
+                    </p>
+                    
+                    <!-- 城市数据卡片 -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-neutral rounded-lg p-4 text-center">
+                            <i class="fa fa-thermometer-half text-secondary text-2xl mb-2"></i>
+                            <h4 class="text-sm text-gray-500 mb-1">最佳旅游季</h4>
+                            <p class="font-medium">3-6月、9-11月</p>
+                        </div>
+                        <div class="bg-neutral rounded-lg p-4 text-center">
+                            <i class="fa fa-language text-secondary text-2xl mb-2"></i>
+                            <h4 class="text-sm text-gray-500 mb-1">语言</h4>
+                            <p class="font-medium">四川话、普通话</p>
+                        </div>
+                        <div class="bg-neutral rounded-lg p-4 text-center">
+                            <i class="fa fa-money text-secondary text-2xl mb-2"></i>
+                            <h4 class="text-sm text-gray-500 mb-1">消费水平</h4>
+                            <p class="font-medium">中高</p>
+                        </div>
+                        <div class="bg-neutral rounded-lg p-4 text-center">
+                            <i class="fa fa-clock-o text-secondary text-2xl mb-2"></i>
+                            <h4 class="text-sm text-gray-500 mb-1">建议游玩</h4>
+                            <p class="font-medium">3-5天</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 城市快速信息 -->
+                <div>
+                    <div class="bg-neutral rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">旅行速览</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                                    <i class="fa fa-subway text-primary mr-2"></i>交通
+                                </h4>
+                                <p class="text-gray-600 text-sm">成都双流国际机场、成都天府国际机场<br>
+                                成都站、成都东站、成都南站<br>
+                                地铁1-18号线覆盖主城区</p>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                                    <i class="fa fa-yen text-primary mr-2"></i>物价参考
+                                </h4>
+                                <p class="text-gray-600 text-sm">餐饮：人均50-100元<br>
+                                住宿：经济型200-400元/晚<br>
+                                景点门票：50-150元/个</p>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                                    <i class="fa fa-warning text-primary mr-2"></i>注意事项
+                                </h4>
+                                <p class="text-gray-600 text-sm">1. 四川菜偏辣，可提前告知少辣<br>
+                                2. 夏季多雨，建议携带雨具<br>
+                                3. 景区游客较多，注意财物安全</p>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full mt-6 btn-primary">
+                            <i class="fa fa-map mr-2"></i>生成旅行攻略
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 15天天气预报 -->
+    <section id="weather" class="py-8 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">最近15天天气预报</h2>
+            
+            <!-- 今日天气重点展示 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+                    <div class="text-center">
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">今日</h3>
+                        <div class="text-4xl text-secondary mb-2">22°C</div>
+                        <div class="flex justify-center items-center space-x-2 text-gray-600">
+                            <i class="fa fa-sun-o text-yellow-500 text-xl"></i>
+                            <span>晴</span>
+                        </div>
+                    </div>
+                    
+                    <div class="border-l border-r border-gray-200 px-6 py-2">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center">
+                                <p class="text-sm text-gray-500 mb-1">风向</p>
+                                <p class="font-medium">东风 2级</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-500 mb-1">体感温度</p>
+                                <p class="font-medium">24°C</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-500 mb-1">气压</p>
+                                <p class="font-medium">1012 hPa</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-500 mb-1">能见度</p>
+                                <p class="font-medium">10 km</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-sm text-gray-500 mb-1">日出/日落</p>
+                        <p class="font-medium">06:32 / 18:58</p>
+                    </div>
+                    
+                    <div>
+                        <button class="w-full btn-secondary">
+                            <i class="fa fa-calendar mr-2"></i>查看逐小时预报
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 15天天气曲线图 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">15天温度趋势</h3>
+                <!-- 图表容器 -->
+                <div class="h-80">
+                    <canvas id="weatherChart"></canvas>
+                </div>
+                
+                <!-- 天气现象说明 -->
+                <div class="mt-6 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-15 gap-2">
+                    <!-- 第1天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月12日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-sun-o text-yellow-500"></i>
+                            <span class="text-xs ml-1">晴</span>
+                        </div>
+                    </div>
+                    <!-- 第2天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月13日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud text-gray-400"></i>
+                            <span class="text-xs ml-1">多云</span>
+                        </div>
+                    </div>
+                    <!-- 第3天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月14日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud-rain text-blue-400"></i>
+                            <span class="text-xs ml-1">小雨</span>
+                        </div>
+                    </div>
+                    <!-- 第4天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月15日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud text-gray-400"></i>
+                            <span class="text-xs ml-1">多云</span>
+                        </div>
+                    </div>
+                    <!-- 第5天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月16日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-sun-o text-yellow-500"></i>
+                            <span class="text-xs ml-1">晴</span>
+                        </div>
+                    </div>
+                    <!-- 第6天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月17日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-sun-o text-yellow-500"></i>
+                            <span class="text-xs ml-1">晴</span>
+                        </div>
+                    </div>
+                    <!-- 第7天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月18日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud text-gray-400"></i>
+                            <span class="text-xs ml-1">多云</span>
+                        </div>
+                    </div>
+                    <!-- 第8天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月19日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud text-gray-400"></i>
+                            <span class="text-xs ml-1">多云</span>
+                        </div>
+                    </div>
+                    <!-- 第9天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月20日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud-rain text-blue-400"></i>
+                            <span class="text-xs ml-1">中雨</span>
+                        </div>
+                    </div>
+                    <!-- 第10天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月21日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud text-gray-400"></i>
+                            <span class="text-xs ml-1">阴</span>
+                        </div>
+                    </div>
+                    <!-- 第11天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月22日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-sun-o text-yellow-500"></i>
+                            <span class="text-xs ml-1">晴</span>
+                        </div>
+                    </div>
+                    <!-- 第12天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月23日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-sun-o text-yellow-500"></i>
+                            <span class="text-xs ml-1">晴</span>
+                        </div>
+                    </div>
+                    <!-- 第13天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月24日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud text-gray-400"></i>
+                            <span class="text-xs ml-1">多云</span>
+                        </div>
+                    </div>
+                    <!-- 第14天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月25日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-cloud text-gray-400"></i>
+                            <span class="text-xs ml-1">多云</span>
+                        </div>
+                    </div>
+                    <!-- 第15天 -->
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">3月26日</p>
+                        <div class="flex justify-center items-center my-1">
+                            <i class="fa fa-sun-o text-yellow-500"></i>
+                            <span class="text-xs ml-1">晴</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 景点大全 -->
+    <section id="scenic" class="py-8 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">景点大全</h2>
+                <div class="flex space-x-2">
+                    <button class="px-3 py-1 rounded bg-primary text-white text-sm">全部</button>
+                    <button class="px-3 py-1 rounded bg-gray-100 text-gray-700 text-sm hover:bg-primary hover:text-white transition-all">自然风光</button>
+                    <button class="px-3 py-1 rounded bg-gray-100 text-gray-700 text-sm hover:bg-primary hover:text-white transition-all">人文古迹</button>
+                    <button class="px-3 py-1 rounded bg-gray-100 text-gray-700 text-sm hover:bg-primary hover:text-white transition-all">主题乐园</button>
+                </div>
+            </div>
+            
+            <!-- 景点列表 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 景点1 -->
+                <div class="scenic-card">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1015/800/500" alt="大熊猫繁育研究基地" class="w-full h-48 object-cover">
+                        <div class="absolute top-3 right-3 bg-secondary text-white text-xs px-2 py-1 rounded">4A景区</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-800">大熊猫繁育研究基地</h3>
+                            <div class="flex items-center text-yellow-400">
+                                <i class="fa fa-star"></i>
+                                <span class="ml-1 text-gray-700">4.8</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3">
+                            成都大熊猫繁育研究基地是中国政府实施大熊猫等濒危野生动物迁地保护工程的主要研究基地之一，是国家AAAA级旅游景区。
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">亲子游</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">国宝</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">必打卡</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                            <span><i class="fa fa-map-marker mr-1"></i>成华区熊猫大道1375号</span>
+                            <span><i class="fa fa-money mr-1"></i>门票55元</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 btn-primary text-center text-sm py-1">查看详情</button>
+                            <button class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                                <i class="fa fa-heart-o"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 景点2 -->
+                <div class="scenic-card">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1018/800/500" alt="宽窄巷子" class="w-full h-48 object-cover">
+                        <div class="absolute top-3 right-3 bg-secondary text-white text-xs px-2 py-1 rounded">4A景区</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-800">宽窄巷子</h3>
+                            <div class="flex items-center text-yellow-400">
+                                <i class="fa fa-star"></i>
+                                <span class="ml-1 text-gray-700">4.7</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3">
+                            宽窄巷子是成都市较为成规模的清末民初民居建筑群，由宽巷子、窄巷子和井巷子三条平行排列的老式街道组成。
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">历史街区</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">美食</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">拍照</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                            <span><i class="fa fa-map-marker mr-1"></i>青羊区金河路口宽窄巷子</span>
+                            <span><i class="fa fa-money mr-1"></i>免费</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 btn-primary text-center text-sm py-1">查看详情</button>
+                            <button class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                                <i class="fa fa-heart-o"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 景点3 -->
+                <div class="scenic-card">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1019/800/500" alt="锦里古街" class="w-full h-48 object-cover">
+                        <div class="absolute top-3 right-3 bg-secondary text-white text-xs px-2 py-1 rounded">4A景区</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-800">锦里古街</h3>
+                            <div class="flex items-center text-yellow-400">
+                                <i class="fa fa-star"></i>
+                                <span class="ml-1 text-gray-700">4.7</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3">
+                            锦里是成都市著名的商业步行街，位于武侯祠大街中段，占地30000余平方米，建筑面积14000余平方米。
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">古街</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">美食</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">夜景</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                            <span><i class="fa fa-map-marker mr-1"></i>武侯区武侯祠大街231号</span>
+                            <span><i class="fa fa-money mr-1"></i>免费</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 btn-primary text-center text-sm py-1">查看详情</button>
+                            <button class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                                <i class="fa fa-heart-o"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 景点4 -->
+                <div class="scenic-card">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1036/800/500" alt="武侯祠" class="w-full h-48 object-cover">
+                        <div class="absolute top-3 right-3 bg-secondary text-white text-xs px-2 py-1 rounded">5A景区</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-800">武侯祠</h3>
+                            <div class="flex items-center text-yellow-400">
+                                <i class="fa fa-star"></i>
+                                <span class="ml-1 text-gray-700">4.6</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3">
+                            成都武侯祠是中国唯一的君臣合祀祠庙，由刘备、诸葛亮蜀汉君臣合祀祠宇及惠陵组成，是国家AAAAA级旅游景区。
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">历史</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">三国</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">文化</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                            <span><i class="fa fa-map-marker mr-1"></i>武侯区武侯祠大街231号</span>
+                            <span><i class="fa fa-money mr-1"></i>门票50元</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 btn-primary text-center text-sm py-1">查看详情</button>
+                            <button class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                                <i class="fa fa-heart-o"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 景点5 -->
+                <div class="scenic-card">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1043/800/500" alt="杜甫草堂" class="w-full h-48 object-cover">
+                        <div class="absolute top-3 right-3 bg-secondary text-white text-xs px-2 py-1 rounded">4A景区</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-800">杜甫草堂</h3>
+                            <div class="flex items-center text-yellow-400">
+                                <i class="fa fa-star"></i>
+                                <span class="ml-1 text-gray-700">4.6</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3">
+                            杜甫草堂是中国唐代大诗人杜甫流寓成都时的故居，是中国规模最大、保存最完好、知名度最高且最具特色的杜甫行踪遗迹地。
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">文化</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">诗词</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">园林</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                            <span><i class="fa fa-map-marker mr-1"></i>青羊区青华路37号</span>
+                            <span><i class="fa fa-money mr-1"></i>门票50元</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 btn-primary text-center text-sm py-1">查看详情</button>
+                            <button class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                                <i class="fa fa-heart-o"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 景点6 -->
+                <div class="scenic-card">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1039/800/500" alt="都江堰景区" class="w-full h-48 object-cover">
+                        <div class="absolute top-3 right-3 bg-secondary text-white text-xs px-2 py-1 rounded">5A景区</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-gray-800">都江堰景区</h3>
+                            <div class="flex items-center text-yellow-400">
+                                <i class="fa fa-star"></i>
+                                <span class="ml-1 text-gray-700">4.8</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3">
+                            都江堰是全世界至今为止年代最久、唯一留存、仍在发挥巨大作用的宏大水利工程，是国家AAAAA级旅游景区。
+                        </p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">水利工程</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">自然风光</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">世界遗产</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                            <span><i class="fa fa-map-marker mr-1"></i>都江堰市公园路青城山</span>
+                            <span><i class="fa fa-money mr-1"></i>门票80元</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 btn-primary text-center text-sm py-1">查看详情</button>
+                            <button class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                                <i class="fa fa-heart-o"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 加载更多 -->
+            <div class="mt-8 text-center">
+                <button class="border border-primary text-primary px-6 py-2 rounded-lg hover:bg-primary hover:text-white transition-all">
+                    加载更多景点 <i class="fa fa-angle-down ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 特色美食 -->
+    <section id="food" class="py-8 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">特色美食</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- 美食1 -->
+                <div class="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
+                    <img src="https://picsum.photos/id/1080/400/300" alt="火锅" class="w-full h-32 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold text-gray-800 mb-1">四川火锅</h3>
+                        <div class="flex items-center text-yellow-400 text-sm mb-2">
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                        </div>
+                        <p class="text-gray-600 text-xs">麻辣鲜香，牛油锅底，毛肚、黄喉、鸭肠必点</p>
+                    </div>
+                </div>
+                
+                <!-- 美食2 -->
+                <div class="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
+                    <img src="https://picsum.photos/id/1081/400/300" alt="串串香" class="w-full h-32 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold text-gray-800 mb-1">串串香</h3>
+                        <div class="flex items-center text-yellow-400 text-sm mb-2">
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star-half-o"></i>
+                        </div>
+                        <p class="text-gray-600 text-xs">小郡肝、牛肉、掌中宝，干碟油碟任选</p>
+                    </div>
+                </div>
+                
+                <!-- 美食3 -->
+                <div class="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
+                    <img src="https://picsum.photos/id/1082/400/300" alt="担担面" class="w-full h-32 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold text-gray-800 mb-1">担担面</h3>
+                        <div class="flex items-center text-yellow-400 text-sm mb-2">
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star-o"></i>
+                        </div>
+                        <p class="text-gray-600 text-xs">麻辣鲜香，面条细滑，芽菜肉末提味</p>
+                    </div>
+                </div>
+                
+                <!-- 美食4 -->
+                <div class="bg-white rounded-lg overflow-hidden shadow-sm card-hover">
+                    <img src="https://picsum.photos/id/1083/400/300" alt="夫妻肺片" class="w-full h-32 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold text-gray-800 mb-1">夫妻肺片</h3>
+                        <div class="flex items-center text-yellow-400 text-sm mb-2">
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star"></i>
+                            <i class="fa fa-star-half-o"></i>
+                        </div>
+                        <p class="text-gray-600 text-xs">牛头皮、牛心、牛舌，红油麻辣入味</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 旅行贴士 -->
+    <section id="tips" class="py-8 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">旅行贴士</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 交通指南 -->
+                <div class="bg-neutral rounded-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa fa-bus text-primary mr-2"></i>交通指南
+                    </h3>
+                    <div class="space-y-3 text-gray-600">
+                        <p><strong>机场：</strong>成都双流国际机场、成都天府国际机场，有机场大巴和地铁直达市区</p>
+                        <p><strong>地铁：</strong>目前运营1-18号线，覆盖主要景点和商圈，支持扫码乘车</p>
+                        <p><strong>出租车：</strong>起步价9元，打表计费，网约车普及</p>
+                        <p><strong>景区直通车：</strong>各大景区间有直通车，方便快捷</p>
+                    </div>
+                </div>
+                
+                <!-- 住宿推荐 -->
+                <div class="bg-neutral rounded-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa fa-bed text-primary mr-2"></i>住宿推荐
+                    </h3>
+                    <div class="space-y-3 text-gray-600">
+                        <p><strong>春熙路/太古里：</strong>商圈中心，交通便利，高端酒店集中</p>
+                        <p><strong>宽窄巷子/锦里：</strong>特色民宿，体验老成都风情</p>
+                        <p><strong>武侯祠/杜甫草堂：</strong>文化氛围浓厚，安静舒适</p>
+                        <p><strong>高新区：</strong>现代化酒店，适合商务出行</p>
+                    </div>
+                </div>
+                
+                <!-- 购物指南 -->
+                <div class="bg-neutral rounded-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa fa-shopping-bag text-primary mr-2"></i>购物指南
+                    </h3>
+                    <div class="space-y-3 text-gray-600">
+                        <p><strong>特产：</strong>蜀绣、郫县豆瓣、张飞牛肉、火锅底料</p>
+                        <p><strong>购物区：</strong>春熙路、太古里、IFS国际金融中心</p>
+                        <p><strong>伴手礼：</strong>文殊院、宽窄巷子有特色伴手礼店</p>
+                        <p><strong>夜市：</strong>建设路、奎星楼街美食购物两不误</p>
+                    </div>
+                </div>
+                
+                <!-- 注意事项 -->
+                <div class="bg-neutral rounded-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa fa-exclamation-triangle text-primary mr-2"></i>注意事项
+                    </h3>
+                    <div class="space-y-3 text-gray-600">
+                        <p><strong>饮食：</strong>四川菜偏辣，肠胃敏感者可提前告知少辣</p>
+                        <p><strong>气候：</strong>夏季多雨，冬季阴冷，建议携带雨具和保暖衣物</p>
+                        <p><strong>安全：</strong>景区游客较多，注意保管个人财物</p>
+                        <p><strong>礼仪：</strong>参观寺庙等场所注意着装得体，保持安静</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-10">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fa fa-map-marker text-secondary text-2xl"></i>
+                        <h3 class="text-xl font-bold">旅城</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">智能旅游城市推荐系统，让你的旅行更有方向</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fa fa-weixin"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fa fa-weibo"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fa fa-qq"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-lg mb-4">快速链接</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="index.html" class="hover:text-white">首页</a></li>
+                        <li><a href="cities.html" class="hover:text-white">城市推荐</a></li>
+                        <li><a href="recommend.html" class="hover:text-white">智能推荐</a></li>
+                        <li><a href="contact.html" class="hover:text-white">联系我们</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-lg mb-4">热门城市</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="chengdu.html" class="hover:text-white">成都</a></li>
+                        <li><a href="beijing.html" class="hover:text-white">北京</a></li>
+                        <li><a href="hangzhou.html" class="hover:text-white">杭州</a></li>
+                        <li><a href="lijiang.html" class="hover:text-white">丽江</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-lg mb-4">服务支持</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">用户协议</a></li>
+                        <li><a href="#" class="hover:text-white">隐私政策</a></li>
+                        <li><a href="#" class="hover:text-white">常见问题</a></li>
+                        <li><a href="#" class="hover:text-white">意见反馈</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 pt-6 text-center text-gray-400 text-sm">
+                <p>© 2024 旅城 - 智能旅游城市推荐系统 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 移动端菜单切换
+        const menuBtn = document.getElementById('menuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        
+        if (menuBtn && mobileMenu) {
+            menuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+                const icon = menuBtn.querySelector('i');
+                if (icon.classList.contains('fa-bars')) {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                } else {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            });
+        }
+        
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // 滚动时导航栏样式变化
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.classList.add('shadow');
+                header.classList.add('py-2');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.remove('shadow');
+                header.classList.add('py-4');
+                header.classList.remove('py-2');
+            }
+            
+            // 标签栏激活状态
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('a[href^="#"]');
+            
+            let currentSection = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                const sectionHeight = section.offsetHeight;
+                if (window.scrollY >= sectionTop && window.scrollY < sectionTop + sectionHeight) {
+                    currentSection = '#' + section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('text-primary', 'border-b-2', 'border-primary', 'font-medium');
+                link.classList.add('text-gray-600');
+                
+                if (link.getAttribute('href') === currentSection) {
+                    link.classList.remove('text-gray-600');
+                    link.classList.add('text-primary', 'border-b-2', 'border-primary', 'font-medium');
+                }
+            });
+        });
+        
+        // 收藏按钮切换状态
+        document.querySelectorAll('.fa-heart-o').forEach(heart => {
+            heart.parentElement.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                if (icon.classList.contains('fa-heart-o')) {
+                    icon.classList.remove('fa-heart-o');
+                    icon.classList.add('fa-heart');
+                    this.classList.add('bg-primary', 'text-white', 'border-primary');
+                    this.classList.remove('border-gray-200', 'text-gray-600');
+                } else {
+                    icon.classList.remove('fa-heart');
+                    icon.classList.add('fa-heart-o');
+                    this.classList.remove('bg-primary', 'text-white', 'border-primary');
+                    this.classList.add('border-gray-200', 'text-gray-600');
+                }
+            });
+        });
+        
+        // 初始化天气曲线图
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('weatherChart').getContext('2d');
+            
+            // 日期标签
+            const labels = [
+                '3/12', '3/13', '3/14', '3/15', '3/16', 
+                '3/17', '3/18', '3/19', '3/20', '3/21', 
+                '3/22', '3/23', '3/24', '3/25', '3/26'
+            ];
+            
+            // 平均温度数据
+            const avgTempData = [18, 18, 15.5, 16, 18.5, 20, 19.5, 18, 15, 15, 17.5, 19, 19, 20.5, 21.5];
+            
+            // 体感温度数据
+            const feelTempData = [20, 19.5, 17, 17.5, 20, 22, 21, 20, 17, 16.5, 19, 21, 20.5, 22, 23];
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '平均温度 (°C)',
+                            data: avgTempData,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointBackgroundColor: '#2563eb',
+                            pointRadius: 4
+                        },
+                        {
+                            label: '体感温度 (°C)',
+                            data: feelTempData,
+                            borderColor: '#f97316',
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointBackgroundColor: '#f97316',
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#333',
+                            bodyColor: '#666',
+                            borderColor: '#ddd',
+                            borderWidth: 1,
+                            padding: 10,
+                            boxPadding: 5
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 10,
+                            ticks: {
+                                stepSize: 2
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
+                    animations: {
+                        tension: {
+                            duration: 1000,
+                            easing: 'linear'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

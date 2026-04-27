@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能推荐 - 定制旅行方案</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 配置Tailwind自定义主题 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4080FF', // 主蓝色
+                        secondary: '#00C48C', // 绿色
+                        purple: '#9765F5',   // 紫色
+                        light: '#F5F7FA',    // 浅灰背景
+                        border: '#E5E9F2',   // 边框色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 2px 12px 0 rgba(0, 0, 0, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .bg-gradient-primary {
+                background: linear-gradient(90deg, #4080FF 0%, #9765F5 100%);
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                background-image: linear-gradient(90deg, #4080FF 0%, #9765F5 100%);
+            }
+            .radio-dot:checked + label .radio-circle {
+                @apply bg-primary border-primary;
+            }
+            .tag-active {
+                @apply bg-primary/10 text-primary border-primary;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light min-h-screen py-8 px-4 sm:px-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- 标题区域 -->
+        <div class="text-center mb-8">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">智能推荐</h1>
+            <p class="text-gray-500 text-base">根据您的偏好，为您量身定制旅行方案</p>
+        </div>
+
+        <!-- 推荐表单卡片 -->
+        <div class="bg-white rounded-2xl shadow-card p-6 md:p-8 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 01 出发信息 -->
+                <div class="bg-light rounded-xl p-5 relative overflow-hidden">
+                    <!-- 装饰元素 -->
+                    <div class="absolute top-0 left-0 w-16 h-16 bg-primary/5 rounded-br-full"></div>
+                    <div class="absolute bottom-0 right-0 w-20 h-20 bg-primary/5 rounded-tl-full"></div>
+                    
+                    <!-- 标题 -->
+                    <div class="flex items-center mb-6 relative z-10">
+                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm mr-2">01</div>
+                        <h2 class="text-lg font-semibold text-gray-800">出发信息</h2>
+                        <i class="fa fa-plane ml-2 text-primary"></i>
+                    </div>
+                    
+                    <!-- 出发城市 -->
+                    <div class="mb-5 relative z-10">
+                        <label class="block text-sm text-gray-600 mb-2">出发城市</label>
+                        <div class="relative">
+                            <select class="w-full bg-white border border-border rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+                                <option>南京市</option>
+                                <option>北京市</option>
+                                <option>上海市</option>
+                                <option>广州市</option>
+                                <option>成都市</option>
+                            </select>
+                            <i class="fa fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- 出行日期 -->
+                    <div class="relative z-10">
+                        <label class="block text-sm text-gray-600 mb-2">出行日期</label>
+                        <div class="relative">
+                            <input type="date" value="2026-04-26" class="w-full bg-white border border-border rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+                            <i class="fa fa-calendar absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 02 距离范围 -->
+                <div class="bg-light rounded-xl p-5 relative overflow-hidden">
+                    <!-- 装饰元素 -->
+                    <div class="absolute top-0 left-0 w-16 h-16 bg-secondary/5 rounded-br-full"></div>
+                    <div class="absolute bottom-0 right-0 w-20 h-20 bg-secondary/5 rounded-tl-full"></div>
+                    
+                    <!-- 标题 -->
+                    <div class="flex items-center mb-6 relative z-10">
+                        <div class="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm mr-2">02</div>
+                        <h2 class="text-lg font-semibold text-gray-800">距离范围</h2>
+                        <i class="fa fa-wifi ml-2 text-secondary"></i>
+                    </div>
+                    
+                    <!-- 距离选项 -->
+                    <div class="space-y-5 relative z-10">
+                        <!-- 不限 -->
+                        <div class="flex items-center">
+                            <input type="radio" id="range-all" name="distance" class="radio-dot sr-only" checked>
+                            <label for="range-all" class="flex items-center cursor-pointer w-full">
+                                <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center mr-3 radio-circle">
+                                    <div class="w-2 h-2 rounded-full bg-white"></div>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">不限</p>
+                                    <p class="text-xs text-gray-500">探索无限可能</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- 省内 -->
+                        <div class="flex items-center">
+                            <input type="radio" id="range-province" name="distance" class="radio-dot sr-only">
+                            <label for="range-province" class="flex items-center cursor-pointer w-full">
+                                <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center mr-3 radio-circle">
+                                    <div class="w-2 h-2 rounded-full bg-white"></div>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">省内</p>
+                                    <p class="text-xs text-gray-500">发现身边的美好</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- 周边 -->
+                        <div class="flex items-center">
+                            <input type="radio" id="range-around" name="distance" class="radio-dot sr-only">
+                            <label for="range-around" class="flex items-center cursor-pointer w-full">
+                                <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center mr-3 radio-circle">
+                                    <div class="w-2 h-2 rounded-full bg-white"></div>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">周边 (500km)</p>
+                                    <p class="text-xs text-gray-500">短途出行好选择</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 03 兴趣标签 -->
+                <div class="bg-light rounded-xl p-5 relative overflow-hidden">
+                    <!-- 装饰元素 -->
+                    <div class="absolute top-0 left-0 w-16 h-16 bg-purple/5 rounded-br-full"></div>
+                    <div class="absolute bottom-0 right-0 w-20 h-20 bg-purple/5 rounded-tl-full"></div>
+                    
+                    <!-- 标题 -->
+                    <div class="flex items-center mb-6 relative z-10">
+                        <div class="w-8 h-8 rounded-full bg-purple flex items-center justify-center text-white font-bold text-sm mr-2">03</div>
+                        <h2 class="text-lg font-semibold text-gray-800">兴趣标签</h2>
+                    </div>
+                    
+                    <!-- 标签网格 -->
+                    <div class="grid grid-cols-2 gap-3 mb-4 relative z-10">
+                        <button class="tag-active border rounded-lg py-2 px-3 flex items-center text-sm font-medium hover:bg-primary/15 transition-colors">
+                            <i class="fa fa-tree mr-2"></i>自然风光
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-water mr-2"></i>海滨休闲
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-university mr-2"></i>历史文化
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-coffee mr-2"></i>休闲康养
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-gamepad mr-2"></i>主题乐园
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-hiking mr-2"></i>户外运动
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-building mr-2"></i>城市观光
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-pray mr-2"></i>宗教信仰
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-cutlery mr-2"></i>美食文化
+                        </button>
+                        <button class="border border-border rounded-lg py-2 px-3 flex items-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-gift mr-2"></i>节庆民俗
+                        </button>
+                    </div>
+                    
+                    <!-- 提示文字 -->
+                    <p class="text-xs text-gray-500 text-center relative z-10">
+                        <i class="fa fa-info-circle mr-1"></i>可多选，推荐更精准
+                    </p>
+                </div>
+            </div>
+            
+            <!-- 提交按钮 -->
+            <div class="mt-8">
+                <button class="w-full bg-gradient-primary text-white rounded-xl py-4 text-lg font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all flex items-center justify-center">
+                    <i class="fa fa-magic mr-2"></i> 获取智能推荐
+                </button>
+            </div>
+            
+            <!-- 底部提示 -->
+            <div class="mt-4 text-center text-xs text-gray-500">
+                <span class="inline-flex items-center mr-4">
+                    <i class="fa fa-user mr-1"></i>个性化推荐
+                </span>
+                <span class="inline-flex items-center mr-4">
+                    <i class="fa fa-map mr-1"></i>精选行程
+                </span>
+                <span class="inline-flex items-center">
+                    <i class="fa fa-shield mr-1"></i>安心出行
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交互脚本 -->
+    <script>
+        // 标签切换逻辑
+        document.querySelectorAll('.grid-cols-2 button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // 切换激活状态
+                this.classList.toggle('tag-active');
+                this.classList.toggle('border-border');
+                this.classList.toggle('text-gray-700');
+                this.classList.toggle('bg-gray-50');
+            });
+        });
+
+        // 单选按钮样式控制
+        document.querySelectorAll('input[name="distance"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                // 重置所有单选按钮样式
+                document.querySelectorAll('.radio-circle').forEach(circle => {
+                    circle.classList.remove('bg-primary', 'border-primary');
+                    circle.classList.add('border-gray-300');
+                });
+                // 设置当前选中的样式
+                this.nextElementSibling.querySelector('.radio-circle').classList.add('bg-primary', 'border-primary');
+                this.nextElementSibling.querySelector('.radio-circle').classList.remove('border-gray-300');
+            });
+        });
+    </script>
+</body>
+</html>

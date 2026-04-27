@@ -31,7 +31,8 @@ public class RecommendationController {
         // 记录推荐请求行为 (异步)
         User user = null;
         if (principal != null) {
-            user = userRepository.findByUsername(principal.getName()).orElse(null);
+            // 使用 JOIN FETCH 查询，确保 interestTags 及其关联的 Tag 已加载
+            user = userRepository.findByUsernameWithInterests(principal.getName()).orElse(null);
         }
         logService.logRecommend(user, request.getInterestTags(), request.getDistanceScope());
 

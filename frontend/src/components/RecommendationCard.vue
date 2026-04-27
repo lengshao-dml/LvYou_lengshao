@@ -1,23 +1,25 @@
 <script setup>
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 
-defineProps({
+const props = defineProps({
   recommendation: {
     type: Object,
     required: true
   }
 });
 
+const router = useRouter();
 const authStore = useAuthStore();
-const handleClick = (cityId) => {
-  authStore.logClick(cityId);
-  // 未来可以加入跳转到城市详情页的逻辑
-  // e.g., router.push(`/city/${cityId}`);
+
+const handleClick = () => {
+  authStore.logClick(props.recommendation.cityId);
+  router.push({ name: 'city-detail', params: { name: props.recommendation.name } });
 };
 </script>
 
 <template>
-  <div class="card h-100 shadow-sm recommendation-card overflow-hidden" @click="handleClick(recommendation.cityId)">
+  <div class="card h-100 shadow-sm recommendation-card overflow-hidden" role="button" @click="handleClick">
     <div class="overflow-hidden" style="height: 180px;">
       <img :src="`https://picsum.photos/seed/${recommendation.cityId}/800/600`" class="card-img-top" alt="City image">
     </div>

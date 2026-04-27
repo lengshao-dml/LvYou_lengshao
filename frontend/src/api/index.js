@@ -45,3 +45,7 @@ export const logClickEvent = (cityId, token) => {
         }
     });
 };
+
+export const getCityWeather = (name) => {
+    return apiClient.get(`/city/${name}/weather`);
+};

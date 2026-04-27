@@ -1,0 +1,275 @@
+# 第 5 章 系统实现
+
+## 5.1 开发环境搭建
+
+本旅游城市推荐系统在以下开发环境下进行搭建和部署：
+
+- **操作系统：** Arch Linux (或兼容的 Linux 发行版，如 CentOS、Ubuntu)。
+- **后端开发环境：**
+  - **Java Development Kit (JDK)：** OpenJDK 17.0.16 (或更高版本)。
+  - **构建工具：** Apache Maven 3.9.11 (或更高版本)。
+  - **Web 框架：** Spring Boot 3.2.x。
+  - **数据库：** MariaDB 12.0.2 (或 MySQL 8.0.x 兼容版本)。
+  - **缓存服务：** Valkey 8.1.3 (或 Redis 兼容版本)。
+- **前端开发环境：**
+  - **Node.js：** 20.x (或 LTS 版本)。
+  - **包管理工具：** npm (与 Node.js 捆绑)。
+  - **JavaScript 框架：** Vue 3.x。
+  - **UI 组件库：** Bootstrap 5.x。
+- **容器化：** Docker 28.x (用于本地开发和生产环境部署)。
+
+**关键配置与适配：** \* **数据库连接：** Spring Boot 配置文件
+`application.properties` 中配置 MariaDB
+连接信息，包括驱动、URL、用户名和密码。使用
+`spring-boot-starter-data-jpa` 整合 Hibernate ORM。 \* **缓存集成：**
+引入 `spring-boot-starter-data-redis` 依赖，配置 Valkey 连接，并使用
+Spring 的 `@Cacheable` 等注解实现缓存功能。 \* **Spring Boot 3.x
+适配：** 鉴于 Spring Boot 3.x 升级到 Jakarta EE 9，确保所有 `javax.*`
+包引用更新为 `jakarta.*`，或通过 `spring-boot-properties-migrator`
+模块辅助平滑迁移，确保兼容性。
+
+## 5.2 关键功能实现
+
+### 5.2.1 用户偏好收集与管理
+
+- **前端实现：**
+  - 在 Vue 3 界面中，通过 `el-select` 组件（假设使用 Element Plus UI
+    库）实现出发地选择。
+  - 兴趣标签通过 `el-checkbox-group` 或自定义标签选择组件实现多选功能。
+  - 计划出行日期使用 `el-date-picker` 组件进行选择。
+  - 用户提交偏好后，通过 Axios 发送 POST 请求至后端 API。
+- **后端实现：**
+  - `UserController` 接收用户偏好提交，调用 `UserService` 处理业务逻辑。
+  - `UserService`
+    将偏好数据（用户ID、兴趣标签ID列表、出发城市ID、出行日期）持久化到
+    MariaDB 的 `user` 和 `user_interest_tag` 表中。
+  - 使用 Spring Data JPA 的 `UserRepository` 和
+    `UserInterestTagRepository` 进行数据库操作。
+
+**代码示例 (UserInterestService.java):**
+
+``` java
+@Service
+public class UserInterestService {
+
+    @Autowired
+    private UserInterestTagRepository userInterestTagRepository;
+    @Autowired
+    private TagRepository tagRepository;
+    @Autowired
+    private CityRepository cityRepository;
+
+    @Transactional
+    public void updateUserPreferences(Long userId, List<String> interestTagNames, String departureCityName, LocalDate travelDate) {
+        // 更新用户兴趣标签
+        userInterestTagRepository.deleteByUserId(userId); // 清除旧标签
+        List<Tag> tags = tagRepository.findByNameIn(interestTagNames);
+        tags.forEach(tag -> {
+            UserInterestTag userInterestTag = new UserInterestTag();
+            userInterestTag.setUserId(userId);
+            userInterestTag.setTagId(tag.getId());
+            userInterestTagRepository.save(userInterestTag);
+        });
+
+        // 更新用户出发城市 (示例，实际可能在User表中更新)
+        cityRepository.findByName(departureCityName).ifPresent(city -> {
+            // Logic to update user's departure city in User entity
+            // For simplicity, this might be handled in UserService
+        });
+
+        // 记录出行日期 (示例，实际可能在RecommendationRequestDto中临时使用)
+    }
+}
+```
+
+### 5.2.2 核心推荐引擎服务
+
+- **后端实现：**
+  - `RecommendationController` 接收用户推荐请求，调用
+    `RecommendationService`。
+  - `RecommendationService` 负责协调各子模块，执行推荐算法。
+  - **数据获取：** 从 MariaDB 获取城市特征标签、城市地理位置。从 Valkey
+    缓存或第三方 API 获取实时天气预报和城市热度数据。
+  - **评分计算：** 根据 4.5 节定义的城市综合评分算法，计算每个候选城市的
+    `FinalScore`。
+  - **结果排序与返回：** 将所有城市按 `FinalScore` 降序排列，返回 Top N
+    个推荐城市。
+
+**代码示例 (RecommendationService.java 核心片段):**
+
+``` java
+@Service
+public class RecommendationService {
+
+    @Autowired
+    private CityRepository cityRepository;
+    @Autowired
+    private CityFeatureTagRepository cityFeatureTagRepository;
+    @Autowired
+    private UserInterestTagRepository userInterestTagRepository;
+    @Autowired
+    private WeatherService weatherService; // 假设有天气服务
+    @Autowired
+    private CityPopularityRepository cityPopularityRepository; // 假设有城市热度服务
+
+    public List<RecommendationDto> getRecommendedCities(Long userId, Long departureCityId, List<String> userInterestTagNames, LocalDate travelDate) {
+        // 1. 获取用户兴趣标签ID
+        List<Long> userTagIds = userInterestTagRepository.findTagIdsByUserId(userId);
+        
+        // 2. 获取所有城市及其特征标签
+        List<City> allCities = cityRepository.findAll();
+        List<RecommendationDto> recommendations = new ArrayList<>();
+
+        for (City city : allCities) {
+            // 避免推荐出发城市
+            if (city.getId().equals(departureCityId)) {
+                continue;
+            }
+
+            // 获取城市特征标签
+            List<Long> cityTagIds = cityFeatureTagRepository.findTagIdsByCityId(city.getId());
+
+            // 计算偏好匹配度
+            double preferenceScore = calculatePreferenceScore(userTagIds, cityTagIds);
+
+            // 计算地理距离因子
+            double distanceScore = calculateDistanceScore(departureCityId, city.getId()); // 假设HaversineDistanceUtil.calculateDistance
+
+            // 获取天气舒适度因子
+            double weatherScore = weatherService.getWeatherComfortScore(city.getId(), travelDate);
+
+            // 获取城市热度因子
+            double popularityScore = cityPopularityRepository.findByCityId(city.getId())
+                                        .map(cp -> cp.getPopularityScore() / 100.0) // 归一化，假设原始分数0-100
+                                        .orElse(0.0);
+
+            // 综合评分
+            double finalScore = 0.4 * preferenceScore + 0.3 * distanceScore + 0.2 * weatherScore + 0.1 * popularityScore;
+
+            recommendations.add(new RecommendationDto(city.getId(), city.getName(), city.getProvince(), finalScore, city.getDescription()));
+        }
+
+        // 排序并返回Top N
+        return recommendations.stream()
+                .sorted(Comparator.comparingDouble(RecommendationDto::getScore).reversed())
+                .limit(10) // 假设返回Top 10
+                .collect(Collectors.toList());
+    }
+
+    private double calculatePreferenceScore(List<Long> userTagIds, List<Long> cityTagIds) {
+        if (userTagIds.isEmpty() || cityTagIds.isEmpty()) return 0.0;
+        Set<Long> intersection = new HashSet<>(userTagIds);
+        intersection.retainAll(cityTagIds);
+        Set<Long> union = new HashSet<>(userTagIds);
+        union.addAll(cityTagIds);
+        return (double) intersection.size() / union.size();
+    }
+
+    private double calculateDistanceScore(Long departureCityId, Long destinationCityId) {
+        // 调用HaversineDistanceUtil或其他地图API计算距离
+        // 这里简化为示例，实际需要从CityRepository获取经纬度
+        City departureCity = cityRepository.findById(departureCityId).orElseThrow();
+        City destinationCity = cityRepository.findById(destinationCityId).orElseThrow();
+        double distance = HaversineDistanceUtil.calculateDistance(
+            departureCity.getLatitude(), departureCity.getLongitude(),
+            destinationCity.getLatitude(), destinationCity.getLongitude()
+        );
+        // 距离越小得分越高，这里假设最大距离为2000km进行归一化
+        double maxDistance = 2000.0;
+        return maxDistance / (distance + 1.0);
+    }
+}
+```
+
+### 5.2.3 第三方 API 集成
+
+- **天气预报：** `QWeatherClient` 服务负责调用和风天气 API。
+  - 使用 `RestTemplate` 或 `WebClient` 发送 HTTP 请求。
+  - 返回结果通过 Valkey 缓存，键为 `weather:cityId:date`，有效期 \[1\]
+    小时。
+- **地图与位置服务：** `HaversineDistanceUtil` 提供了 Haversine
+  公式实现的距离计算工具类。对于更复杂的地理位置解析，可集成高德/百度地图
+  SDK。
+
+## 5.3 性能优化实践
+
+- **Valkey 缓存：**
+  - **结果缓存：**
+    热门城市列表、推荐算法的中间结果（如城市特征-标签匹配度）缓存到
+    Valkey，减少重复计算。
+  - **API 响应缓存：** 第三方天气 API
+    的响应结果缓存，将天气查询响应时间从 \[200ms\] 降低至 \[5ms\]。
+  - **缓存策略：** 合理设置缓存失效时间，采用 LRU 等淘汰策略。
+- **数据库优化：**
+  - **索引优化：** 确保所有查询涉及的字段（尤其是 JOIN、WHERE
+    子句中的字段）都有合适的索引。
+  - **慢查询优化：** 定期分析 MariaDB 慢查询日志，优化低效 SQL 语句。
+  - **连接池优化：** 使用 HikariCP
+    等高性能数据库连接池，合理配置连接数，提高数据库访问效率。
+- **后端服务优化：**
+  - **异步处理：**
+    对于非核心、耗时操作（如日志记录、用户行为分析），采用 Spring 的
+    `@Async` 注解或消息队列进行异步处理，避免阻塞主线程。
+  - **JVM 调优：** 调整 JVM 内存参数（Xmx、Xms），优化垃圾回收策略。
+  - **负载均衡：** 在多实例部署时，配置 Nginx
+    或其他负载均衡器，将请求均匀分发到各个后端服务实例，提升并发处理能力。
+
+## 5.4 系统界面演示
+
+### 5.4.1 用户偏好输入界面
+
+（图 5-1 用户偏好输入界面示意图） 界面展示了一个清晰的表单，包含： \*
+**出发城市选择框：** 用户可通过搜索或下拉选择出发城市。 \*
+**旅游兴趣标签选择区：**
+以标签云形式展示多种兴趣（如自然风光、历史文化、美食文化、户外运动等），用户可多选。
+\* **计划出行日期选择器：** 用户选择计划出行的日期范围。 \*
+**"生成推荐"按钮：** 点击后触发推荐请求。
+
+### 5.4.2 推荐结果展示界面
+
+（图 5-2 推荐结果列表展示示意图）
+界面以卡片布局展示个性化推荐的城市列表： \*
+每张卡片包含：城市名称、省份、一张代表性图片、推荐理由（如"与您的'自然风光'兴趣高度匹配，且未来天气晴朗"）、关键标签、预计距离、天气图标及温度范围。
+\* 提供筛选和排序栏，允许用户进一步细化推荐结果。 \*
+点击城市卡片可进入城市详情页。
+
+### 5.4.3 城市详情页面
+
+（图 5-3 城市详情页面示意图） 展示所选城市的详细信息： \* **顶部：**
+城市名称、省份、大幅城市图片。 \* **中部：**
+城市介绍、详细的城市特征标签、未来 15 天天气预报（表格或图表形式）。 \*
+**底部：** 集成地图组件，标注城市地理位置和周边热门景点（可选）。
+
+### 5.4.4 实现效果验证
+
+- **推荐准确性：**
+  经过内部测试，本系统在用户偏好匹配方面的推荐准确率可达 \[85\]%。
+- **系统响应速度：** 核心推荐 API 在 \[200\]
+  并发用户下，平均响应时间控制在 \[400\] 毫秒以内。
+- **用户满意度：** 初始用户反馈显示，对个性化推荐结果的满意度评分为
+  \[4.2/5.0\]。
+
+## 参考文献
+
+\[1\]
+邱薛莉,徐春.融合多模态与多头注意力的旅游推荐模型\[J\].信息记录材料,2026,27(03):156-158+180.DOI:10.16009/j.issn.1009-5624.2026.03.049.
+\[2\]
+许芳芳.国内个性化旅游推荐研究进展\[J\].电脑知识与技术,2025,21(26):32-36.DOI:10.14004/j.cnki.ckt.2025.1345.
+\[3\]
+朱志国,孙怡,王谢宁,等.偏好融合的旅游群组景点推荐:基于深度学习的框架模型\[J\].系统科学与数学,2025,45(02):470-484.
+\[4\]
+王茸,李强,何颖,等.个性化旅游推荐系统的设计与实现\[J\].福建电脑,2023,39(09):95-99.DOI:10.16707/j.cnki.fjpc.2023.09.020.
+\[5\]
+班航.基于旅游大数据的用户画像建模及个性化推荐研究\[D\].安徽工程大学,2023.DOI:10.27763/d.cnki.gahgc.2023.000038.
+\[6\]
+黄宇浩,顾得豪,胡炎林,等.基于标签挖掘和聚类算法的新用户快速兴趣建模\[J\].计算机时代,2023,(05):88-90.DOI:10.16644/j.cnki.cn33-1094/tp.2023.05.019.
+\[7\]
+陈思宇.基于知识图谱和用户动态偏好的旅游推荐算法研究\[D\].桂林理工大学,2023.DOI:10.27050/d.cnki.gglgc.2023.000386.
+\[8\]
+陈勇.基于协同过滤算法的旅游推荐系统的设计\[J\].价值工程,2022,41(30):160-162.
+\[9\]
+宋羿弢.基于用户情感画像的旅游推荐方法研究\[D\].中北大学,2021.DOI:10.27470/d.cnki.ghbgc.2021.000554.
+\[10\]
+梁存桂.基于Spark云计算平台的旅游景点推荐算法优化研究\[D\].桂林理工大学,2021.DOI:10.27050/d.cnki.gglgc.2021.000351.
+\[11\]
+王小芳,刘树林,刘洪江.融合机器学习算法在旅游推荐中的研究与实现\[J\].电脑知识与技术,2020,16(09):198-199.DOI:10.14004/j.cnki.ckt.2020.1070.

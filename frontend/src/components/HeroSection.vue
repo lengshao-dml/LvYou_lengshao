@@ -1,13 +1,13 @@
 <script setup>
 import { ref } from 'vue';
-import { useRecommendationStore } from '@/store/recommendation';
+import { useRouter } from 'vue-router';
 
-const store = useRecommendationStore();
+const router = useRouter();
 const searchQuery = ref('');
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
-    store.fetchCityByName(searchQuery.value.trim());
+    router.push({ name: 'city-detail', params: { name: searchQuery.value.trim() } });
   }
 };
 </script>
@@ -30,13 +30,11 @@ const handleSearch = () => {
             >
             <button 
               class="btn btn-primary" 
-              type="submit" 
-              :disabled="store.isSearching"
+              type="submit"
               style="--bs-btn-color: #fff; --bs-btn-bg: #f97316; --bs-btn-border-color: #f97316; --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #ea580c; --bs-btn-hover-border-color: #dd520b;"
             >
-              <span v-if="store.isSearching" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              <i v-else class="bi bi-search"></i>
-              <span class="d-none d-md-inline ms-2">{{ store.isSearching ? '搜索中...' : '搜索' }}</span>
+              <i class="bi bi-search"></i>
+              <span class="d-none d-md-inline ms-2">搜索</span>
             </button>
           </div>
         </form>

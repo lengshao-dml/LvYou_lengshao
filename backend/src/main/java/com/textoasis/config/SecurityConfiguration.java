@@ -31,6 +31,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/tags").permitAll()
                         .requestMatchers("/api/recommend").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/api/admin/**").permitAll() // 允许管理员测试接口
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
