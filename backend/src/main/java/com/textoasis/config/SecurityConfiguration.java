@@ -29,6 +29,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/api/cities", "/api/city/**", "/api/cities/popular").permitAll()
                         .requestMatchers("/api/tags").permitAll()
+                        .requestMatchers("/api/personalized").permitAll()
                         .requestMatchers("/api/recommend").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/admin/**").permitAll() // 允许管理员测试接口

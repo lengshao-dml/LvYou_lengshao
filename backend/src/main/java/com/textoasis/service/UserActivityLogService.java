@@ -49,11 +49,12 @@ public class UserActivityLogService {
         }
     }
 
-    public void logRecommend(User user, List<String> interestTags, String distanceScope) {
+    public void logRecommend(User user, List<String> interestTags, String distanceScope, String departureCity) {
         UserRecommendLog log = new UserRecommendLog();
-        log.setUser(user); // user 可以是 null
+        log.setUser(user);
         log.setInterestTags(String.join(",", interestTags));
         log.setDistanceScope(distanceScope);
+        log.setDepartureCity(departureCity);
         recommendLogRepository.save(log);
     }
 }

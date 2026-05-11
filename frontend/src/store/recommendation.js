@@ -8,8 +8,12 @@ export const useRecommendationStore = defineStore('recommendation', {
     // 热门城市
     popularCities: [],
     // 搜索结果
-    searchedCities: [], 
-    
+    searchedCities: [],
+    // 个性化板块刷新信号（每次搜索/推荐后 +1，驱动 PersonalizedSection 重新拉取）
+    personalizedRefreshKey: 0,
+    // 记录上次使用的出发城市，作为下次打开页面的默认值
+    lastDepartureCity: localStorage.getItem('lastDepartureCity') || '',
+
     isLoading: false, // 用于推荐
     isSearching: false, // 用于城市搜索
     isFetchingPopular: false, // 用于热门城市
@@ -38,6 +42,7 @@ export const useRecommendationStore = defineStore('recommendation', {
       try {
         const response = await getRecommendations(request);
         this.recommendations = response.data;
+        this.personalizedRefreshKey++;
       } catch (err) {
         this.error = '获取推荐失败，请检查您的输入或稍后重试。';
         console.error(err);
@@ -54,6 +59,7 @@ export const useRecommendationStore = defineStore('recommendation', {
       try {
         const response = await getCityByName(cityName);
         this.searchedCities = response.data;
+        this.personalizedRefreshKey++;
         if (this.searchedCities.length === 0) {
             this.error = `未找到与“${cityName}”相关的城市。`;
         }

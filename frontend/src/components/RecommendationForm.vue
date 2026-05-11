@@ -33,9 +33,12 @@ const selectCity = (city) => {
   departureSearchText.value = city.name;
 };
 
-// 如果用户已登录且有常居地，默认作为出发城市
+// 出发城市默认值优先级：上次输入 > 常居地
 const setDefaultCity = () => {
-  if (authStore.isLoggedIn && authStore.homeCityName) {
+  if (recommendationStore.lastDepartureCity) {
+    departureCity.value = recommendationStore.lastDepartureCity;
+    departureSearchText.value = recommendationStore.lastDepartureCity;
+  } else if (authStore.isLoggedIn && authStore.homeCityName) {
     departureCity.value = authStore.homeCityName;
     departureSearchText.value = authStore.homeCityName;
   }
@@ -87,14 +90,25 @@ const toggleTag = (tagName) => {
 };
 
 // 提交表单
-const handleSubmit = () => {
+const handleSubmit = async () => {
   const request = {
     departureCity: departureCity.value,
     interestTags: selectedTags.value,
     travelDate: travelDate.value,
     distanceScope: distanceScope.value,
   };
-  recommendationStore.fetchRecommendations(request);
+
+  // 记住本次出发城市
+  recommendationStore.lastDepartureCity = departureCity.value;
+  localStorage.setItem('lastDepartureCity', departureCity.value);
+
+  await recommendationStore.fetchRecommendations(request);
+
+  // 推荐完成后滚动到结果区域
+  const el = document.getElementById('results-section');
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 };
 </script>
 

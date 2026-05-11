@@ -25,6 +25,9 @@ public class UserRecommendLog {
     @Column
     private String distanceScope;
 
+    @Column
+    private String departureCity;
+
     @CreationTimestamp
     @Column(updatable = false, name = "request_time")
     private Date requestTime;

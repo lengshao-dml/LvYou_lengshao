@@ -28,6 +28,9 @@ public class CityPopularity {
     @Column(name = "score", nullable = false)
     private Double score = 0.0;
 
+    @Column(name = "base_score")
+    private Double baseScore = 0.0;
+
     @UpdateTimestamp
     @Column(name = "update_time")
     private Date updateTime;

@@ -43,8 +43,17 @@ public class PopularityService {
     private CityPopularity createNewPopularityEntry(Long cityId) {
         City city = cityRepository.findById(cityId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid cityId: " + cityId));
+        // 以景点数计算基础分（与 DataSeeder 逻辑一致）
+        long totalAttractions = city.getFeatures() != null
+                ? city.getFeatures().stream().mapToLong(f -> f.getAttractions() != null
+                ? f.getAttractions().size() : 0).sum()
+                : 0;
+        double baseScore = Math.min(100.0, totalAttractions * 5.0);
+
         CityPopularity newPopularity = new CityPopularity();
         newPopularity.setCity(city);
+        newPopularity.setBaseScore(baseScore);
+        newPopularity.setScore(baseScore);
         return newPopularity;
     }
 
@@ -63,8 +72,13 @@ public class PopularityService {
         }
 
         for (CityPopularity popularity : allPopularities) {
-            double score = (popularity.getSearchCount() * 0.3) + (popularity.getClickCount() * 0.5);
-            popularity.setScore(score);
+            long searchCount = popularity.getSearchCount() != null ? popularity.getSearchCount() : 0;
+            long clickCount = popularity.getClickCount() != null ? popularity.getClickCount() : 0;
+
+            // 基础分占30%，用户行为分占70%
+            double baseScore = popularity.getBaseScore() != null ? popularity.getBaseScore() : 0.0;
+            double behaviorBoost = searchCount * 5.0 + clickCount * 10.0;
+            popularity.setScore(baseScore * 0.3 + behaviorBoost * 0.7);
         }
 
         popularityRepository.saveAll(allPopularities);

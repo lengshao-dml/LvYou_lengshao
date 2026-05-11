@@ -181,8 +181,8 @@ public class RecommendationService {
         for (CityFeature feature : city.getFeatures()) {
             Integer index = tagIndexMap.get(feature.getTag().getName());
             if (index != null) {
-                // 如果一个城市有多个同类型景点，可以累加或设为1，这里简单设为1表示拥有该特征
-                cityVector[index] = 1.0;
+                int attractionCount = feature.getAttractions() != null ? feature.getAttractions().size() : 1;
+                cityVector[index] = Math.max(1.0, (double) attractionCount);
             }
         }
 

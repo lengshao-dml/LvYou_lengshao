@@ -1,9 +1,7 @@
 package com.textoasis.startup;
 
-import com.textoasis.model.City;
-import com.textoasis.model.CityFeature;
-import com.textoasis.model.Tag;
-import com.textoasis.model.Attraction;
+import com.textoasis.model.*;
+import com.textoasis.repository.CityPopularityRepository;
 import com.textoasis.repository.CityRepository;
 import com.textoasis.repository.TagRepository;
 import jakarta.transaction.Transactional;
@@ -28,6 +26,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private final CityRepository cityRepository;
     private final TagRepository tagRepository;
+    private final CityPopularityRepository popularityRepository;
 
     @Override
     @Transactional
@@ -221,5 +220,55 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         System.out.println("DataSeeder: Imported " + totalCities + " cities, skipped " + skipped + ".");
+
+        // 初始化城市热度数据（基于景点数作为初始热度）
+        initCityPopularity();
+    }
+
+    /**
+     * 为所有城市初始化热力数据，以景点总数作为初始热度分数
+     */
+    @Transactional
+    protected void initCityPopularity() {
+        // 检查是否已有数据
+        if (popularityRepository.count() > 0) {
+            return;
+        }
+
+        List<City> allCities = cityRepository.findAll();
+        if (allCities.isEmpty()) {
+            return;
+        }
+
+        // 计算所有城市的景点数
+        long maxAttractions = allCities.stream()
+                .mapToLong(c -> c.getFeatures() != null
+                        ? c.getFeatures().stream().mapToLong(f -> f.getAttractions() != null
+                        ? f.getAttractions().size() : 0).sum()
+                        : 0)
+                .max().orElse(1);
+
+        if (maxAttractions == 0) maxAttractions = 1;
+
+        List<CityPopularity> popularities = new ArrayList<>();
+        for (City city : allCities) {
+            long totalAttractions = city.getFeatures() != null
+                    ? city.getFeatures().stream().mapToLong(f -> f.getAttractions() != null
+                    ? f.getAttractions().size() : 0).sum()
+                    : 0;
+
+            double baseScore = (double) totalAttractions / maxAttractions * 100.0;
+
+            CityPopularity cp = new CityPopularity();
+            cp.setCity(city);
+            cp.setClickCount(0L);
+            cp.setSearchCount(0L);
+            cp.setBaseScore(baseScore);
+            cp.setScore(baseScore);
+            popularities.add(cp);
+        }
+
+        popularityRepository.saveAll(popularities);
+        System.out.println("DataSeeder: Initialized popularity data for " + popularities.size() + " cities.");
     }
 }

@@ -6,6 +6,7 @@ import { useRecommendationStore } from '@/store/recommendation';
 import HeroSection from '@/components/HeroSection.vue';
 import RecommendationForm from '@/components/RecommendationForm.vue';
 import ResultsDisplay from '@/components/ResultsDisplay.vue';
+import PersonalizedSection from '@/components/PersonalizedSection.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -24,6 +25,11 @@ const handlePopularCityClick = (city) => {
 <template>
   <div>
     <HeroSection />
+
+    <!-- ===== 猜你喜欢 + 词云板块 (新增) ===== -->
+    <div class="container my-5">
+      <PersonalizedSection />
+    </div>
     
     <div id="recommend-section" class="container my-5">
       <div class="row justify-content-center">
@@ -33,7 +39,7 @@ const handlePopularCityClick = (city) => {
       </div>
     </div>
 
-    <!-- 热门推荐 Section -->
+    <!-- 热门推荐 Section (保留，挪到下方) -->
     <div v-if="recommendationStore.popularCities.length > 0" class="container my-5">
       <h2 class="text-center mb-4 fw-bold">热门推荐</h2>
       <div class="row g-4">
@@ -58,7 +64,7 @@ const handlePopularCityClick = (city) => {
       </div>
     </div>
 
-    <div class="container mb-5">
+    <div id="results-section" class="container mb-5">
        <ResultsDisplay />
     </div>
 

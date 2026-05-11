@@ -34,7 +34,7 @@ public class RecommendationController {
             // 使用 JOIN FETCH 查询，确保 interestTags 及其关联的 Tag 已加载
             user = userRepository.findByUsernameWithInterests(principal.getName()).orElse(null);
         }
-        logService.logRecommend(user, request.getInterestTags(), request.getDistanceScope());
+        logService.logRecommend(user, request.getInterestTags(), request.getDistanceScope(), request.getDepartureCity());
 
         return ResponseEntity.ok(recommendationService.recommend(request, Optional.ofNullable(user)));
     }
