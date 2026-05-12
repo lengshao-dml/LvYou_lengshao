@@ -283,10 +283,17 @@ const hotnessColor = (score) => {
 };
 
 const hotnessLabel = (score) => {
-  if (score >= 80) return '🔥 热门';
-  if (score >= 60) return '🌤️ 较热';
-  if (score >= 40) return '🌱 温';
-  return '❄️ 冷门';
+  if (score >= 80) return '热门';
+  if (score >= 60) return '较热';
+  if (score >= 40) return '温';
+  return '冷门';
+};
+
+const hotnessIcon = (score) => {
+  if (score >= 80) return 'bi bi-fire';
+  if (score >= 60) return 'bi bi-sun';
+  if (score >= 40) return 'bi bi-sprout';
+  return 'bi bi-snow';
 };
 
 // 日期格式化
@@ -333,10 +340,10 @@ function formatDate(dateStr) {
           <div class="hero-overlay"></div>
           <!-- 返回按钮 -->
           <div class="position-absolute top-0 start-0 z-3 p-3">
-            <button class="btn btn-sm btn-outline-light border-opacity-25 rounded-circle"
-                    style="width: 40px; height: 40px;" @click="goBack"
-                    title="返回首页">
-              <i class="bi bi-arrow-left"></i>
+            <button class="btn btn-sm btn-outline-light border-opacity-25 rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 44px; height: 44px;" @click="goBack"
+                    aria-label="返回首页">
+              <i class="bi bi-arrow-left" aria-hidden="true"></i>
             </button>
           </div>
           <!-- 城市信息 -->
@@ -351,12 +358,13 @@ function formatDate(dateStr) {
                 <p class="hero-desc text-white-75 mb-0 d-none d-md-block">{{ city.description }}</p>
               </div>
               <div class="hero-stats d-flex gap-3 mt-3 mt-md-0">
-                <div class="text-center px-3 py-2 rounded-3 bg-white bg-opacity-15 backdrop-blur">
+                <div class="hero-stat text-center px-3 py-2">
                   <div class="fs-4 fw-bold text-white">{{ city.hotnessScore ?? '--' }}</div>
                   <div class="small text-white-50">热度评分</div>
                 </div>
-                <div class="text-center px-3 py-2 rounded-3 bg-white bg-opacity-15 backdrop-blur">
-                  <div class="fs-4 fw-bold" :style="{ color: hotnessColor(city.hotnessScore) }">
+                <div class="hero-stat text-center px-3 py-2">
+                  <div class="fs-4 fw-bold d-flex align-items-center justify-content-center gap-1" :style="{ color: hotnessColor(city.hotnessScore) }">
+                    <i :class="hotnessIcon(city.hotnessScore)"></i>
                     {{ hotnessLabel(city.hotnessScore) }}
                   </div>
                   <div class="small text-white-50">热度等级</div>
@@ -395,7 +403,7 @@ function formatDate(dateStr) {
 
         <!-- 城市概览 -->
         <section id="section-overview" class="mb-4">
-          <div class="card shadow-sm border-0">
+          <div class="overview-card card">
             <div class="card-body p-4">
               <h5 class="fw-bold mb-3">
                 <i class="bi bi-info-circle-fill text-primary me-2"></i>城市概览
@@ -403,33 +411,33 @@ function formatDate(dateStr) {
               <p class="text-secondary mb-0">{{ city.description }}</p>
               <div class="row g-3 mt-3">
                 <div class="col-6 col-md-3">
-                  <div class="bg-light rounded-3 p-3 text-center">
-                    <i class="bi bi-geo-alt text-primary fs-4 mb-1 d-block"></i>
-                    <small class="text-muted d-block">省份</small>
-                    <span class="fw-medium">{{ city.province }}</span>
+                  <div class="stat-card">
+                    <div class="stat-icon"><i class="bi bi-geo-alt"></i></div>
+                    <small class="d-block" style="color: var(--color-gray-500); font-size: 0.75rem;">省份</small>
+                    <span class="fw-semibold" style="color: var(--color-gray-800);">{{ city.province }}</span>
                   </div>
                 </div>
                 <div class="col-6 col-md-3">
-                  <div class="bg-light rounded-3 p-3 text-center">
-                    <i class="bi bi-translate text-primary fs-4 mb-1 d-block"></i>
-                    <small class="text-muted d-block">拼音</small>
-                    <span class="fw-medium">{{ city.pinyin || '--' }}</span>
+                  <div class="stat-card">
+                    <div class="stat-icon"><i class="bi bi-translate"></i></div>
+                    <small class="d-block" style="color: var(--color-gray-500); font-size: 0.75rem;">拼音</small>
+                    <span class="fw-semibold" style="color: var(--color-gray-800);">{{ city.pinyin || '--' }}</span>
                   </div>
                 </div>
                 <div class="col-6 col-md-3">
-                  <div class="bg-light rounded-3 p-3 text-center">
-                    <i class="bi bi-thermometer-half text-primary fs-4 mb-1 d-block"></i>
-                    <small class="text-muted d-block">热度评分</small>
-                    <span class="fw-medium" :style="{ color: hotnessColor(city.hotnessScore) }">
+                  <div class="stat-card">
+                    <div class="stat-icon"><i class="bi bi-thermometer-half"></i></div>
+                    <small class="d-block" style="color: var(--color-gray-500); font-size: 0.75rem;">热度评分</small>
+                    <span class="fw-semibold" :style="{ color: hotnessColor(city.hotnessScore) }">
                       {{ city.hotnessScore ?? '--' }}
                     </span>
                   </div>
                 </div>
                 <div class="col-6 col-md-3">
-                  <div class="bg-light rounded-3 p-3 text-center">
-                    <i class="bi bi-star text-primary fs-4 mb-1 d-block"></i>
-                    <small class="text-muted d-block">热度等级</small>
-                    <span class="badge" :style="{ backgroundColor: hotnessColor(city.hotnessScore), color: '#fff' }">
+                  <div class="stat-card">
+                    <div class="stat-icon"><i class="bi bi-star"></i></div>
+                    <small class="d-block" style="color: var(--color-gray-500); font-size: 0.75rem;">热度等级</small>
+                    <span class="badge mt-1" :style="{ backgroundColor: hotnessColor(city.hotnessScore), color: '#fff' }">
                       {{ hotnessLabel(city.hotnessScore) }}
                     </span>
                   </div>
@@ -463,7 +471,7 @@ function formatDate(dateStr) {
                 <!-- 今日温度 + 天气图标 -->
                 <div class="col-md-3 text-center">
                   <h6 class="text-muted small mb-2 fw-semibold">今日</h6>
-                  <div class="display-4 fw-bold text-primary mb-1">
+                  <div class="display-4 fw-bold mb-1 today-temp">
                     {{ todayWeather ? todayWeather.tempMax : '--' }}°
                   </div>
                   <div class="d-flex align-items-center justify-content-center gap-2">
@@ -614,7 +622,7 @@ function formatDate(dateStr) {
               <!-- 景点列表 -->
               <div v-if="activeAttractions.length > 0" class="row g-3">
                 <div v-for="attr in activeAttractions" :key="attr.id" class="col-12">
-                  <div class="card border-start border-primary border-3 shadow-sm h-100">
+                  <div class="card attraction-card h-100">
                     <div class="card-body py-3">
                       <h6 class="fw-bold mb-2">
                         <i class="bi bi-pin-map-fill text-primary me-1"></i>
@@ -662,12 +670,12 @@ function formatDate(dateStr) {
 <style scoped>
 .city-detail-page {
   min-height: calc(100vh - 56px);
-  background-color: #f8f9fa;
+  background: linear-gradient(180deg, var(--color-sky-50) 0%, #FFFFFF 30%);
 }
 
-/* ====== 英雄大屏 ====== */
+/* ====== Hero Section ====== */
 .hero-section {
-  height: 50vh;
+  height: 55vh;
   min-height: 420px;
 }
 
@@ -683,16 +691,18 @@ function formatDate(dateStr) {
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.3) 0%,
-    rgba(0, 0, 0, 0.5) 50%,
-    rgba(0, 0, 0, 0.8) 100%
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.4) 40%,
+    rgba(0, 0, 0, 0.75) 85%,
+    rgba(12, 74, 110, 0.9) 100%
   );
   z-index: 1;
 }
 
 .hero-title {
-  font-size: clamp(2rem, 5vw, 3rem);
-  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  letter-spacing: -0.02em;
 }
 
 .hero-desc {
@@ -704,101 +714,168 @@ function formatDate(dateStr) {
   -webkit-box-orient: vertical;
 }
 
-/* 粘性标签栏 */
+/* ====== Sticky Tabs ====== */
 .sticky-tabs {
-  z-index: 1020;
+  z-index: var(--z-sticky);
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .sticky-tab {
-  color: #6c757d;
+  color: var(--color-gray-500);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--transition-all);
   border-bottom: 3px solid transparent !important;
   white-space: nowrap;
+  font-size: 0.85rem;
 }
-
 .sticky-tab:hover {
-  color: var(--bs-primary);
+  color: var(--color-sky-600);
 }
-
 .sticky-tab.active {
-  color: var(--bs-primary);
+  color: var(--color-sky-600);
   font-weight: 600;
-  border-bottom-color: var(--bs-primary) !important;
+  border-bottom-color: var(--color-sky-500) !important;
 }
 
-/* 旧标签样式 */
+/* ====== Feature Tabs ====== */
+.nav-tabs {
+  border-bottom: 2px solid var(--color-border);
+}
 .nav-tabs .nav-link {
-  color: #6c757d;
+  color: var(--color-gray-500);
   border: none;
   border-bottom: 3px solid transparent;
-  transition: all 0.2s;
+  transition: var(--transition-all);
+  font-size: 0.85rem;
+  padding: 10px 16px;
 }
-
 .nav-tabs .nav-link:hover {
-  color: var(--bs-primary);
-  border-bottom-color: var(--bs-primary);
+  color: var(--color-sky-600);
+  border-bottom-color: var(--color-sky-300);
   background: none;
 }
-
 .nav-tabs .nav-link.active {
-  color: var(--bs-primary);
+  color: var(--color-sky-600);
   font-weight: 600;
   border: none;
-  border-bottom: 3px solid var(--bs-primary);
+  border-bottom: 3px solid var(--color-sky-500);
   background: none;
 }
 
-.nav-tabs {
-  border-bottom: 1px solid #dee2e6;
+/* ====== Overview Stats ====== */
+.stat-card {
+  background: linear-gradient(135deg, var(--color-sky-50), #FFFFFF);
+  border: 1px solid var(--color-sky-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  text-align: center;
+  transition: var(--transition-all);
+}
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-sky-300);
+}
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--color-sky-500);
+  font-size: 1.25rem;
+  margin-bottom: 8px;
 }
 
-/* 热度圆环 */
-.rounded-circle {
-  transition: transform 0.2s;
-}
-.rounded-circle:hover {
-  transform: scale(1.05);
-}
-
-/* 天气预报样式 */
+/* ====== Weather Today Card ====== */
 .today-card {
-  border-color: #e5e7eb !important;
+  background: linear-gradient(135deg, var(--color-sky-50), #FFFFFF) !important;
+  border: 1px solid var(--color-sky-200) !important;
+  border-radius: var(--radius-xl) !important;
 }
-.today-card .border-start {
-  border-color: #e5e7eb !important;
-}
+.today-card .border-start,
 .today-card .border-end {
-  border-color: #e5e7eb !important;
+  border-color: var(--color-sky-200) !important;
+}
+.today-temp {
+  font-size: 3.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--color-sky-500), var(--color-sky-700));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
 }
 
-/* 逐日预报卡片网格 */
+/* ====== Weather Day Cards ====== */
 .weather-day-card {
-  background: #fff;
-  transition: all 0.2s ease;
+  background: #FFFFFF;
+  border: 1px solid var(--color-sky-200);
+  border-radius: var(--radius-md);
+  transition: var(--transition-all);
   cursor: default;
 }
 .weather-day-card:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
-  border-color: var(--bs-primary) !important;
+  border-color: var(--color-sky-400);
 }
 .weather-day-card.weather-today {
-  background: #eff6ff;
-  border-color: #93c5fd !important;
+  background: linear-gradient(135deg, var(--color-sky-100), var(--color-sky-50));
+  border-color: var(--color-sky-400) !important;
+  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.12);
 }
 
-/* 图表容器 */
+/* ====== Attraction Cards ====== */
+.attraction-card {
+  border: none !important;
+  border-left: 4px solid var(--color-sky-400) !important;
+  border-radius: var(--radius-md) !important;
+  background: linear-gradient(135deg, #FFFFFF, var(--color-sky-50)) !important;
+  transition: var(--transition-all);
+}
+.attraction-card:hover {
+  box-shadow: var(--shadow-md);
+  border-left-color: var(--color-sky-500) !important;
+}
+
+/* ====== Chart Container ====== */
 .chart-container {
   position: relative;
   width: 100%;
 }
 
-/* 响应式调整 */
+/* ====== Overview Section Card ====== */
+.overview-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ====== Hero Stats ====== */
+.hero-stat {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
+}
+
 @media (max-width: 576px) {
   .today-card .border-start,
   .today-card .border-end {
     border: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weather-day-card:hover {
+    transform: none;
   }
 }
 </style>

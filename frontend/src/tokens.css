@@ -1,0 +1,214 @@
+/* ============================================================
+   LvYou Design System — Three-Layer Token Architecture
+   Primitive → Semantic → Component
+   Style: Aurora UI (vibrant gradients, luminous, atmospheric)
+   ============================================================ */
+
+/* ===== LAYER 1: PRIMITIVE TOKENS ===== */
+
+/* Color Scales */
+:root {
+  /* Sky Blue Primary */
+  --color-sky-50:  #F0F9FF;
+  --color-sky-100: #E0F2FE;
+  --color-sky-200: #BAE6FD;
+  --color-sky-300: #7DD3FC;
+  --color-sky-400: #38BDF8;
+  --color-sky-500: #0EA5E9;
+  --color-sky-600: #0284C7;
+  --color-sky-700: #0369A1;
+  --color-sky-800: #075985;
+  --color-sky-900: #0C4A6E;
+
+  /* Adventure Orange Accent */
+  --color-orange-50:  #FFF7ED;
+  --color-orange-100: #FFEDD5;
+  --color-orange-200: #FED7AA;
+  --color-orange-300: #FDBA74;
+  --color-orange-400: #FB923C;
+  --color-orange-500: #F97316;
+  --color-orange-600: #EA580C;
+  --color-orange-700: #C2410C;
+  --color-orange-800: #9A3412;
+  --color-orange-900: #7C2D12;
+
+  /* Gray Scale */
+  --color-gray-50:  #FAFAFA;
+  --color-gray-100: #F4F4F5;
+  --color-gray-200: #E4E4E7;
+  --color-gray-300: #D4D4D8;
+  --color-gray-400: #A1A1AA;
+  --color-gray-500: #71717A;
+  --color-gray-600: #52525B;
+  --color-gray-700: #3F3F46;
+  --color-gray-800: #27272A;
+  --color-gray-900: #18181B;
+
+  /* Semantic Colors */
+  --color-green-500: #22C55E;
+  --color-green-600: #16A34A;
+  --color-yellow-500: #EAB308;
+  --color-yellow-600: #CA8A04;
+  --color-red-500: #EF4444;
+  --color-red-600: #DC2626;
+
+  /* Spacing (4px base) */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-14: 3.5rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Typography */
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg:   1.125rem;
+  --font-size-xl:   1.25rem;
+  --font-size-2xl:  1.5rem;
+  --font-size-3xl:  1.875rem;
+  --font-size-4xl:  2.25rem;
+  --font-size-5xl:  3rem;
+  --leading-tight:  1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* Border Radius */
+  --radius-sm:  0.375rem;
+  --radius-md:  0.75rem;
+  --radius-lg:  1rem;
+  --radius-xl:  1.5rem;
+  --radius-2xl: 2rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:  0 8px 24px rgba(0,0,0,0.10);
+  --shadow-xl:  0 12px 36px rgba(0,0,0,0.12);
+  --shadow-glow-blue:  0 4px 20px rgba(14, 165, 233, 0.25);
+  --shadow-glow-orange: 0 4px 20px rgba(234, 88, 12, 0.25);
+
+  /* Motion */
+  --duration-fast:   150ms;
+  --duration-base:   200ms;
+  --duration-slow:   300ms;
+  --easing-smooth:   cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-Index */
+  --z-dropdown: 1000;
+  --z-sticky:   1100;
+  --z-modal:    1200;
+}
+
+/* ===== LAYER 2: SEMANTIC TOKENS ===== */
+
+:root {
+  /* Background & Foreground */
+  --color-background: var(--color-sky-50);
+  --color-foreground: var(--color-sky-900);
+  --color-card: #FFFFFF;
+  --color-card-foreground: var(--color-gray-800);
+
+  /* Primary */
+  --color-primary: var(--color-sky-500);
+  --color-primary-hover: var(--color-sky-600);
+  --color-primary-active: var(--color-sky-700);
+  --color-primary-foreground: #FFFFFF;
+  --color-primary-subtle: var(--color-sky-100);
+  --color-primary-subtle-fg: var(--color-sky-700);
+
+  /* Accent (CTA) */
+  --color-accent: var(--color-orange-500);
+  --color-accent-hover: var(--color-orange-600);
+  --color-accent-foreground: #FFFFFF;
+  --color-accent-subtle: var(--color-orange-100);
+  --color-accent-subtle-fg: var(--color-orange-700);
+
+  /* Secondary */
+  --color-secondary: var(--color-gray-100);
+  --color-secondary-hover: var(--color-gray-200);
+  --color-secondary-foreground: var(--color-gray-700);
+
+  /* Muted */
+  --color-muted: var(--color-sky-100);
+  --color-muted-foreground: var(--color-gray-500);
+
+  /* Status */
+  --color-success: var(--color-green-600);
+  --color-warning: var(--color-yellow-500);
+  --color-error: var(--color-red-600);
+
+  /* Border & Input */
+  --color-border: var(--color-sky-200);
+  --color-border-hover: var(--color-sky-300);
+  --color-ring: var(--color-sky-500);
+
+  /* Spacing Semantics */
+  --gap-component: var(--space-3);
+  --gap-section: var(--space-10);
+  --padding-card: var(--space-6);
+  --padding-section: var(--space-14);
+
+  /* Typography Semantics */
+  --font-display: var(--font-size-5xl);
+  --font-heading: var(--font-size-3xl);
+  --font-subheading: var(--font-size-xl);
+  --font-body: var(--font-size-base);
+  --font-caption: var(--font-size-sm);
+
+  /* Transitions */
+  --transition-all: all var(--duration-base) var(--easing-smooth);
+  --transition-colors: color var(--duration-fast) var(--easing-smooth),
+                       background-color var(--duration-fast) var(--easing-smooth),
+                       border-color var(--duration-fast) var(--easing-smooth);
+  --transition-transform: transform var(--duration-base) var(--easing-smooth);
+
+  /* Focus Ring */
+  --ring-width: 2px;
+  --ring-offset: 2px;
+}
+
+/* ===== LAYER 3: COMPONENT TOKENS ===== */
+
+:root {
+  /* Button */
+  --btn-primary-bg: linear-gradient(135deg, var(--color-sky-500), var(--color-sky-600));
+  --btn-primary-hover-bg: linear-gradient(135deg, var(--color-sky-600), var(--color-sky-700));
+  --btn-cta-bg: linear-gradient(135deg, var(--color-orange-500), var(--color-orange-600));
+  --btn-cta-hover-bg: linear-gradient(135deg, var(--color-orange-600), var(--color-orange-700));
+  --btn-padding-x: var(--space-5);
+  --btn-padding-y: var(--space-3);
+  --btn-radius: var(--radius-md);
+  --btn-font-weight: var(--font-weight-semibold);
+
+  /* Card */
+  --card-bg: var(--color-card);
+  --card-border: var(--color-border);
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-lg);
+  --card-radius: var(--radius-xl);
+  --card-padding: var(--padding-card);
+
+  /* Input */
+  --input-bg: #FFFFFF;
+  --input-border: var(--color-border);
+  --input-radius: var(--radius-md);
+  --input-padding: var(--space-3) var(--space-4);
+  --input-focus-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+
+  /* Badge */
+  --badge-padding: 0.25em 0.75em;
+  --badge-radius: var(--radius-full);
+}

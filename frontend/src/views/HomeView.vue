@@ -51,10 +51,7 @@ const handlePopularCityClick = (city) => {
             <div class="card-body d-flex flex-column">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <h5 class="card-title mb-0 fw-bold">{{ city.name }}</h5>
-                <span 
-                  class="badge rounded-pill fs-6" 
-                  style="color: #f97316; background-color: rgba(249, 115, 22, 0.1);"
-                >{{ city.score.toFixed(1) }} 分</span>
+                <span class="badge badge-score rounded-pill fs-6">{{ city.score.toFixed(1) }} 分</span>
               </div>
               <h6 class="card-subtitle mb-2 text-body-secondary">{{ city.province }}</h6>
               <p class="text-muted small mb-0 mt-auto">热门城市 · 点击查看详情</p>
@@ -73,20 +70,31 @@ const handlePopularCityClick = (city) => {
 
 <style scoped>
 .recommendation-card {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  border: 1px solid #e9ecef;
+  transition: all var(--duration-base) var(--easing-smooth);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
 }
 .recommendation-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
-}
-.card-title {
-  color: #343a40;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg) !important;
+  border-color: var(--color-sky-300);
 }
 .card-img-top {
-  transition: transform 0.5s ease;
+  transition: transform 0.5s var(--easing-smooth);
 }
 .recommendation-card:hover .card-img-top {
-  transform: scale(1.1);
+  transform: scale(1.08);
+}
+@media (prefers-reduced-motion: reduce) {
+  .recommendation-card,
+  .recommendation-card:hover {
+    transition: none;
+    transform: none;
+  }
+  .recommendation-card:hover .card-img-top {
+    transform: none;
+  }
 }
 </style>

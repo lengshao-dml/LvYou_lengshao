@@ -14,7 +14,6 @@ const personalized = ref(null);
 const loading = ref(false);
 const error = ref(null);
 
-// 获取个性化推荐数据
 const fetchPersonalized = async () => {
   loading.value = true;
   error.value = null;
@@ -29,35 +28,41 @@ const fetchPersonalized = async () => {
   }
 };
 
-// 点击城市跳转到详情
 const handleCityClick = (city) => {
   authStore.logClick(city.cityId);
   router.push({ name: 'city-detail', params: { name: city.name } });
 };
 
-// 标签词云点击
 const handleTagClick = (item) => {
-  // 点击标签后可以触发搜索或筛选，这里简单展示提示
   console.log('点击标签:', item.name);
 };
 
-// 城市词云点击
 const handleCityCloudClick = (item) => {
   router.push({ name: 'city-detail', params: { name: item.name } });
+};
+
+// 生成城市背景图 URL（与 CityDetailView 相同的 hash 算法）
+const cityBgImage = (city) => {
+  const name = city.name || 'city';
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const seed = Math.abs(hash) % 200 + 10;
+  return `https://picsum.photos/id/${seed}/800/600`;
 };
 
 onMounted(() => {
   fetchPersonalized();
 });
 
-// 登录状态变化时重新获取（显示个性化内容）
 watch(() => authStore.token, () => {
   if (authStore.token) {
     fetchPersonalized();
   }
 });
 
-// 搜索/推荐/搜索城市后实时刷新
 watch(() => recommendationStore.personalizedRefreshKey, () => {
   fetchPersonalized();
 });
@@ -65,34 +70,35 @@ watch(() => recommendationStore.personalizedRefreshKey, () => {
 
 <template>
   <div class="personalized-section">
-    <!-- 加载中 -->
+    <!-- Loading -->
     <div v-if="loading" class="d-flex justify-content-center py-5">
-      <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;">
+      <div class="spinner-border" style="color: var(--color-sky-500);" role="status">
         <span class="visually-hidden">加载中...</span>
       </div>
     </div>
 
-    <!-- 数据已加载 -->
+    <!-- Loaded -->
     <div v-else-if="personalized" class="row g-4">
-      <!-- 左侧：猜你喜欢 -->
+      <!-- Left: Recommended Cities -->
       <div class="col-lg-8">
-        <div class="d-flex align-items-center gap-2 mb-3">
-          <i class="bi bi-heart-fill fs-5" style="color: #F97316;"></i>
-          <h4 class="fw-bold mb-0">
+        <div class="d-flex align-items-center gap-2 mb-4">
+          <div class="section-icon" style="background: rgba(234, 88, 12, 0.12); color: var(--color-accent);">
+            <i class="bi bi-heart-fill"></i>
+          </div>
+          <h4 class="fw-bold mb-0" style="color: var(--color-gray-800);">
             {{ authStore.isLoggedIn ? '猜你喜欢' : '热门推荐' }}
           </h4>
-          <span class="badge rounded-pill bg-orange-subtle text-orange ms-2">
+          <span v-if="authStore.isLoggedIn" class="badge rounded-pill px-3 py-2"
+                style="background: rgba(14, 165, 233, 0.1); color: var(--color-sky-600); font-size: 0.75rem;">
             <i class="bi bi-magic me-1"></i>基于您的画像
           </span>
         </div>
 
-        <!-- 未登录提示 -->
-        <p v-if="!authStore.isLoggedIn" class="text-muted small mb-3">
+        <p v-if="!authStore.isLoggedIn" class="mb-4" style="color: var(--color-gray-500); font-size: var(--font-size-sm);">
           <i class="bi bi-info-circle me-1"></i>
-          <router-link to="/login" class="text-decoration-none">登录</router-link> 后可获得基于您的兴趣的个性化推荐
+          <router-link to="/login" class="fw-medium" style="color: var(--color-primary);">登录</router-link> 后可获得基于您的兴趣的个性化推荐
         </p>
 
-        <!-- 推荐城市卡片 -->
         <div v-if="personalized.recommendedCities && personalized.recommendedCities.length > 0" class="row g-3">
           <div
             v-for="city in personalized.recommendedCities"
@@ -100,34 +106,36 @@ watch(() => recommendationStore.personalizedRefreshKey, () => {
             class="col-md-6"
           >
             <div
-              class="card personalized-card h-100 overflow-hidden shadow-sm"
+              class="person-card card-hover"
               role="button"
+              :aria-label="'查看 ' + city.name + ' 详情'"
+              :style="{ backgroundImage: 'url(' + cityBgImage(city) + ')' }"
               @click="handleCityClick(city)"
             >
-              <div class="card-body d-flex justify-content-between align-items-center p-3">
-                <div>
-                  <h6 class="fw-bold mb-1">{{ city.name }}</h6>
-                  <small class="text-muted">{{ city.province }}</small>
+              <div class="person-card-overlay"></div>
+              <div class="d-flex justify-content-between align-items-center p-3 position-relative">
+                <div class="overflow-hidden">
+                  <h6 class="fw-bold mb-1" style="color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">{{ city.name }}</h6>
+                  <small style="color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.4);">{{ city.province }}</small>
                   <div v-if="city.matchedTags && city.matchedTags.length > 0" class="mt-2">
                     <span
                       v-for="tag in city.matchedTags"
                       :key="tag"
-                      class="badge bg-light text-secondary me-1 fw-normal px-2 py-1"
-                      style="font-size: 0.7rem;"
+                      class="badge me-1 px-2 py-1"
+                      style="background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); color: #fff; font-size: 0.7rem; font-weight: 500;"
                     >{{ tag }}</span>
                   </div>
                 </div>
                 <div class="text-end ms-3">
-                  <div
-                    class="badge rounded-pill fs-6 px-3 py-2"
-                    :style="{
-                      backgroundColor: city.score >= 80 ? '#00C48C' : city.score >= 60 ? '#4080FF' : '#F97316',
-                      color: '#fff',
-                    }"
-                  >
+                  <div class="score-badge"
+                    :class="{
+                      'score-high': city.score >= 80,
+                      'score-mid': city.score >= 60 && city.score < 80,
+                      'score-low': city.score < 60,
+                    }">
                     {{ city.score ? city.score.toFixed(1) : 'N/A' }}
                   </div>
-                  <div v-if="city.distanceKm !== undefined" class="text-muted small mt-1">
+                  <div v-if="city.distanceKm !== undefined" style="color: var(--color-gray-500); font-size: var(--font-size-xs); margin-top: 4px;">
                     {{ city.distanceKm > 1000 ? (city.distanceKm / 1000).toFixed(1) + 'k' : city.distanceKm.toFixed(0) }} km
                   </div>
                 </div>
@@ -136,15 +144,14 @@ watch(() => recommendationStore.personalizedRefreshKey, () => {
           </div>
         </div>
 
-        <div v-else class="text-center text-muted py-4">
+        <div v-else class="text-center py-5" style="color: var(--color-gray-400);">
           <i class="bi bi-emoji-neutral fs-1 d-block mb-2"></i>
-          <p class="mb-0">暂无推荐数据，<router-link to="/register" class="text-decoration-none">注册</router-link> 后设置兴趣偏好即可获取个性化推荐</p>
+          <p class="mb-0">暂无推荐数据，<router-link to="/register" style="color: var(--color-primary);">注册</router-link> 后设置兴趣偏好即可获取个性化推荐</p>
         </div>
       </div>
 
-      <!-- 右侧：词云区域 -->
+      <!-- Right: Word Clouds -->
       <div class="col-lg-4 d-flex flex-column gap-4">
-        <!-- 热门标签词云 -->
         <WordCloudView
           v-if="personalized.hotTags && personalized.hotTags.length > 0"
           :items="personalized.hotTags"
@@ -155,13 +162,12 @@ watch(() => recommendationStore.personalizedRefreshKey, () => {
           @item-click="handleTagClick"
         />
 
-        <!-- 热门城市词云 -->
         <WordCloudView
           v-if="personalized.hotCities && personalized.hotCities.length > 0"
           :items="personalized.hotCities"
           title="热门城市"
           icon="bi bi-geo-alt-fill"
-          :colorScheme="['#00C48C', '#1ABC9C', '#2ECC71', '#27AE60', '#16A085', '#3498DB', '#2980B9', '#9B59B6']"
+          :colorScheme="['#0EA5E9', '#38BDF8', '#7DD3FC', '#0284C7', '#0369A1', '#EA580C', '#F97316', '#C2410C']"
           :clickable="true"
           empty-text="暂无热门城市"
           @item-click="handleCityCloudClick"
@@ -169,12 +175,13 @@ watch(() => recommendationStore.personalizedRefreshKey, () => {
       </div>
     </div>
 
-    <!-- 错误状态 -->
-    <div v-else-if="error" class="alert alert-warning d-flex align-items-center gap-2 py-3" role="alert">
-      <i class="bi bi-exclamation-triangle-fill"></i>
+    <!-- Error -->
+    <div v-else-if="error" class="alert d-flex align-items-center gap-3 py-3" role="alert"
+         style="background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2); border-radius: var(--radius-md);">
+      <i class="bi bi-exclamation-triangle-fill" style="color: var(--color-error);"></i>
       <div>
         <strong>加载失败</strong> — {{ error }}
-        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @click="fetchPersonalized">
+        <button type="button" class="btn btn-sm ms-2" style="background: rgba(220, 38, 38, 0.1); color: var(--color-error);" @click="fetchPersonalized">
           <i class="bi bi-arrow-clockwise"></i> 重试
         </button>
       </div>
@@ -183,28 +190,66 @@ watch(() => recommendationStore.personalizedRefreshKey, () => {
 </template>
 
 <style scoped>
-.personalized-section {
-  /* wrapper */
+.section-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
-.personalized-card {
-  border: 1px solid #e9ecef;
-  border-radius: 0.75rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
+.person-card {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  transition: var(--transition-all);
+  overflow: hidden;
+  min-height: 90px;
 }
-
-.personalized-card:hover {
+.person-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.3) 100%);
+  z-index: 0;
+  transition: var(--transition-all);
+}
+.person-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
-  border-color: #4080FF;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-sky-300);
+}
+.person-card:hover .person-card-overlay {
+  background: linear-gradient(135deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.2) 100%);
 }
 
-.bg-orange-subtle {
-  background-color: rgba(249, 115, 22, 0.1);
+.score-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  color: #fff;
+  background: var(--color-sky-500);
+}
+.score-badge.score-high {
+  background: linear-gradient(135deg, #00C48C, #16A34A);
+}
+.score-badge.score-mid {
+  background: linear-gradient(135deg, var(--color-sky-500), var(--color-sky-600));
+}
+.score-badge.score-low {
+  background: linear-gradient(135deg, var(--color-orange-500), var(--color-orange-600));
 }
 
-.text-orange {
-  color: #F97316;
+@media (prefers-reduced-motion: reduce) {
+  .person-card, .person-card:hover {
+    transition: none;
+    transform: none;
+  }
 }
 </style>

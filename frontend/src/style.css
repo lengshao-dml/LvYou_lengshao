@@ -1,53 +1,196 @@
-:root {
-  --bs-primary-rgb: 8, 102, 255;
-  --bs-secondary-rgb: 108, 117, 125;
+/* ============================================================
+   LvYou — Aurora UI Global Styles
+   Design tokens are in tokens.css (three-layer: primitive→semantic→component)
+   This file: Bootstrap overrides, utility classes, global patterns
+   ============================================================ */
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
+/* ===== Base ===== */
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  background-color: #f4f7f9;
-  color: #333;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  background: linear-gradient(180deg, var(--color-sky-50) 0%, var(--color-sky-100) 50%, var(--color-sky-50) 100%);
+  background-attachment: fixed;
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 覆盖 Bootstrap 的一些默认样式，使其更柔和 */
+/* Subtle background mesh */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(14, 165, 233, 0.06), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 50%, rgba(234, 88, 12, 0.04), transparent),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(56, 189, 248, 0.05), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== Focus States ===== */
+:focus-visible {
+  outline: var(--ring-width) solid var(--color-ring);
+  outline-offset: var(--ring-offset);
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: var(--ring-width) solid var(--color-ring);
+  outline-offset: var(--ring-offset);
+}
+
+/* ===== Bootstrap Overrides ===== */
 .btn-primary {
-    --bs-btn-bg: #0866ff;
-    --bs-btn-border-color: #0866ff;
-    --bs-btn-hover-bg: #0052cc;
-    --bs-btn-hover-border-color: #0052cc;
+  background: var(--btn-primary-bg) !important;
+  border: none !important;
+  font-weight: var(--btn-font-weight) !important;
+  padding: var(--btn-padding-y) var(--btn-padding-x) !important;
+  border-radius: var(--btn-radius) !important;
+  box-shadow: var(--shadow-glow-blue);
+  transition: var(--transition-all);
 }
-
-.card {
-    border: none;
-    border-radius: 0.75rem;
+.btn-primary:hover {
+  background: var(--btn-primary-hover-bg) !important;
+  box-shadow: 0 6px 24px rgba(14, 165, 233, 0.35);
+  transform: translateY(-1px);
 }
 
 .btn-orange {
-    color: #fff !important;
-    background-color: #f97316 !important;
-    border-color: #f97316 !important;
+  background: var(--btn-cta-bg) !important;
+  border: none !important;
+  color: #fff !important;
+  font-weight: var(--btn-font-weight) !important;
+  padding: var(--btn-padding-y) var(--btn-padding-x) !important;
+  border-radius: var(--btn-radius) !important;
+  box-shadow: var(--shadow-glow-orange);
+  transition: var(--transition-all);
 }
-
 .btn-orange:hover {
-    background-color: #ea580c !important;
-    border-color: #dd520b !important;
+  background: var(--btn-cta-hover-bg) !important;
+  box-shadow: 0 6px 24px rgba(234, 88, 12, 0.35);
+  transform: translateY(-1px);
+  color: #fff !important;
 }
 
+.btn-outline-primary {
+  color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  border-radius: var(--btn-radius) !important;
+  transition: var(--transition-all);
+}
+.btn-outline-primary:hover {
+  background: var(--color-primary-subtle) !important;
+  color: var(--color-primary-active) !important;
+}
+
+.card {
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  background: var(--card-bg);
+  transition: var(--transition-all);
+}
+
+/* ===== Aurora Glass Cards ===== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(186, 230, 253, 0.5);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-all);
+}
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-sky-300);
+}
+
+/* ===== Badge ===== */
 .badge-score {
-    color: #f97316;
-    background-color: rgba(249, 115, 22, 0.1);
-    padding: 0.35em 0.65em;
-    font-weight: 700;
-    border-radius: var(--bs-border-radius-pill);
+  color: var(--color-accent);
+  background: linear-gradient(135deg, var(--color-accent-subtle), var(--color-orange-100));
+  padding: var(--badge-padding);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--badge-radius);
+  font-size: var(--font-size-sm);
+}
+.bg-orange-subtle {
+  background-color: var(--color-accent-subtle);
+}
+.text-orange {
+  color: var(--color-accent);
 }
 
+/* ===== Card Hover Pattern ===== */
 .card-hover {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    cursor: pointer;
-    border: 1px solid #e9ecef;
+  cursor: pointer;
+  transition: transform var(--duration-base) var(--easing-smooth),
+              box-shadow var(--duration-base) var(--easing-smooth),
+              border-color var(--duration-base) var(--easing-smooth);
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-sky-300);
 }
 
-.card-hover:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+@media (prefers-reduced-motion: reduce) {
+  .card-hover, .card-hover:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ===== Gradient Divider ===== */
+.gradient-divider {
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-sky-400), var(--color-sky-500), var(--color-orange-400));
+}
+
+/* ===== Section Titles ===== */
+.section-title {
+  font-size: var(--font-subheading);
+  font-weight: var(--font-weight-bold);
+  background: linear-gradient(135deg, var(--color-sky-700), var(--color-sky-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ===== Aurora Button Pulse (CTA emphasis) ===== */
+@keyframes aurora-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(234, 88, 12, 0.25); }
+  50% { box-shadow: 0 4px 32px rgba(234, 88, 12, 0.45); }
+}
+.btn-cta-pulse {
+  animation: aurora-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-cta-pulse {
+    animation: none;
+  }
 }

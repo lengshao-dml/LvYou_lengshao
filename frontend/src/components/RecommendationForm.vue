@@ -8,18 +8,14 @@ const recommendationStore = useRecommendationStore();
 const metaStore = useMetaStore();
 const authStore = useAuthStore();
 
-// 表单的本地状态
-const departureCity = ref(''); // 由城市补全选择
-const departureSearchText = ref(''); // 补全用搜索文本
+const departureCity = ref('');
+const departureSearchText = ref('');
 const selectedTags = ref([]);
-const travelDate = ref(new Date().toISOString().split('T')[0]); // 默认今天
-const distanceScope = ref('ANY'); // 默认"不限"
+const travelDate = ref(new Date().toISOString().split('T')[0]);
+const distanceScope = ref('ANY');
 
-// 城市自动补全
 const filteredCities = computed(() => {
-  if (!departureSearchText.value || departureCity.value) {
-    return [];
-  }
+  if (!departureSearchText.value || departureCity.value) return [];
   return metaStore.cities
     .filter(city =>
       city.pinyin.toLowerCase().includes(departureSearchText.value.toLowerCase()) ||
@@ -33,7 +29,6 @@ const selectCity = (city) => {
   departureSearchText.value = city.name;
 };
 
-// 出发城市默认值优先级：上次输入 > 常居地
 const setDefaultCity = () => {
   if (recommendationStore.lastDepartureCity) {
     departureCity.value = recommendationStore.lastDepartureCity;
@@ -44,20 +39,17 @@ const setDefaultCity = () => {
   }
 };
 
-// 组件加载时，自动获取标签和城市列表
 onMounted(() => {
   metaStore.fetchMeta();
   setDefaultCity();
 });
 
-// 监听 authStore.user（异步加载完成时自动填充）
 watch(() => authStore.user, (newUser) => {
   if (newUser && newUser.homeCityName && !departureCity.value) {
     setDefaultCity();
   }
 });
 
-// 标签图标映射
 const tagIcons = {
   '自然风光': 'bi bi-tree',
   '海滨休闲': 'bi bi-water',
@@ -72,14 +64,12 @@ const tagIcons = {
 };
 const tagIcon = (name) => tagIcons[name] || 'bi bi-tag';
 
-// 距离范围选项
 const distanceOptions = [
   { value: 'ANY', label: '不限', desc: '探索无限可能' },
   { value: 'PROVINCE', label: '省内', desc: '发现身边的美好' },
   { value: 'NEARBY_500KM', label: '周边 (500km)', desc: '短途出行好选择' },
 ];
 
-// 处理标签点击
 const toggleTag = (tagName) => {
   const index = selectedTags.value.indexOf(tagName);
   if (index > -1) {
@@ -89,7 +79,6 @@ const toggleTag = (tagName) => {
   }
 };
 
-// 提交表单
 const handleSubmit = async () => {
   const request = {
     departureCity: departureCity.value,
@@ -97,14 +86,9 @@ const handleSubmit = async () => {
     travelDate: travelDate.value,
     distanceScope: distanceScope.value,
   };
-
-  // 记住本次出发城市
   recommendationStore.lastDepartureCity = departureCity.value;
   localStorage.setItem('lastDepartureCity', departureCity.value);
-
   await recommendationStore.fetchRecommendations(request);
-
-  // 推荐完成后滚动到结果区域
   const el = document.getElementById('results-section');
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -113,36 +97,30 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto">
-    <!-- 标题区域 -->
+  <div style="max-width: 56rem; margin: 0 auto;">
+    <!-- Section Header -->
     <div class="text-center mb-5">
-      <h2 class="fw-bold text-dark mb-2" style="font-size: clamp(1.8rem, 4vw, 2.5rem);">智能推荐</h2>
-      <p class="text-muted">根据您的偏好，为您量身定制旅行方案</p>
+      <h2 class="fw-bold mb-2" style="font-size: clamp(1.6rem, 4vw, 2.2rem); color: var(--color-gray-800);">智能推荐</h2>
+      <p style="color: var(--color-gray-500);">根据您的偏好，为您量身定制旅行方案</p>
     </div>
 
     <form @submit.prevent="handleSubmit">
-      <!-- 推荐表单卡片 -->
-      <div class="bg-white rounded-4 shadow-sm p-4 p-md-5 mb-4" style="box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);">
+      <!-- Form Card -->
+      <div class="form-card">
         <div class="row g-4">
-          <!-- 01 出发信息 -->
+          <!-- Step 1: Departure -->
           <div class="col-lg-4 col-md-12">
-            <div class="rec-card h-100">
-              <!-- 装饰圆角 -->
-              <div class="rec-card-deco"></div>
-
-              <!-- 编号标题 -->
-              <div class="d-flex align-items-center mb-4 position-relative" style="z-index: 1;">
-                <div class="rec-step-num" style="background: #4080FF;">01</div>
-                <h3 class="fs-6 fw-semibold text-dark mb-0 ms-2">出发信息</h3>
-                <i class="bi bi-airplane-engines ms-2 text-primary"></i>
+            <div class="step-card">
+              <div class="step-header">
+                <span class="step-num" style="background: var(--color-sky-500);">01</span>
+                <h3 class="step-title">出发信息</h3>
               </div>
 
-              <!-- 出发城市 -->
-              <div class="mb-4 position-relative" style="z-index: 1;">
-                <label class="form-label small text-secondary mb-2">出发城市</label>
+              <div class="mb-4">
+                <label class="form-label-sm">出发城市</label>
                 <div class="dropdown">
                   <input type="text"
-                    class="form-control rec-input dropdown-toggle"
+                    class="form-input dropdown-toggle"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                     placeholder="搜索城市..."
@@ -158,43 +136,38 @@ const handleSubmit = async () => {
                 </div>
               </div>
 
-              <!-- 出行日期 -->
-              <div class="position-relative" style="z-index: 1;">
-                <label class="form-label small text-secondary mb-2">出行日期</label>
+              <div>
+                <label class="form-label-sm">出行日期</label>
                 <div class="position-relative">
-                  <input type="date" class="form-control rec-input" v-model="travelDate" required>
-                  <i class="bi bi-calendar-event position-absolute top-50 end-0 translate-middle-y me-3 text-muted pointer-events-none"></i>
+                  <input type="date" class="form-input" v-model="travelDate" required>
+                  <i class="bi bi-calendar-event position-absolute top-50 end-0 translate-middle-y me-3" style="color: var(--color-gray-400); pointer-events: none;"></i>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 02 距离范围 -->
+          <!-- Step 2: Distance -->
           <div class="col-lg-4 col-md-6">
-            <div class="rec-card h-100">
-              <div class="rec-card-deco" style="background: rgba(0,196,140,0.08);"></div>
-
-              <div class="d-flex align-items-center mb-4 position-relative" style="z-index: 1;">
-                <div class="rec-step-num" style="background: #00C48C;">02</div>
-                <h3 class="fs-6 fw-semibold text-dark mb-0 ms-2">距离范围</h3>
-                <i class="bi bi-wifi ms-2" style="color: #00C48C;"></i>
+            <div class="step-card">
+              <div class="step-header">
+                <span class="step-num" style="background: var(--color-green-600);">02</span>
+                <h3 class="step-title">距离范围</h3>
               </div>
 
-              <div class="d-flex flex-column gap-3 position-relative" style="z-index: 1;">
+              <div class="d-flex flex-column gap-3">
                 <div v-for="opt in distanceOptions" :key="opt.value" class="d-flex align-items-center">
                   <input type="radio"
                     :id="'scope-'+opt.value"
                     :value="opt.value"
                     v-model="distanceScope"
-                    class="rec-radio visually-hidden">
-                  <label :for="'scope-'+opt.value" class="d-flex align-items-center cursor-pointer w-100">
-                    <div class="rec-radio-circle"
-                      :class="{'active': distanceScope === opt.value}">
-                      <div class="rec-radio-dot"></div>
+                    class="visually-hidden">
+                  <label :for="'scope-'+opt.value" class="radio-label w-100" :class="{ 'radio-active': distanceScope === opt.value }">
+                    <div class="radio-circle" :class="{ active: distanceScope === opt.value }">
+                      <div class="radio-dot"></div>
                     </div>
                     <div class="ms-3">
-                      <p class="fw-medium text-dark mb-0">{{ opt.label }}</p>
-                      <p class="text-xs text-muted mb-0">{{ opt.desc }}</p>
+                      <p class="fw-medium mb-0" style="color: var(--color-gray-800); font-size: 0.9rem;">{{ opt.label }}</p>
+                      <p style="color: var(--color-gray-500); font-size: 0.75rem; margin: 0;">{{ opt.desc }}</p>
                     </div>
                   </label>
                 </div>
@@ -202,21 +175,19 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <!-- 03 兴趣标签 -->
+          <!-- Step 3: Interests -->
           <div class="col-lg-4 col-md-6">
-            <div class="rec-card h-100">
-              <div class="rec-card-deco" style="background: rgba(151,101,245,0.08);"></div>
-
-              <div class="d-flex align-items-center mb-4 position-relative" style="z-index: 1;">
-                <div class="rec-step-num" style="background: #9765F5;">03</div>
-                <h3 class="fs-6 fw-semibold text-dark mb-0 ms-2">兴趣标签</h3>
+            <div class="step-card">
+              <div class="step-header">
+                <span class="step-num" style="background: #9765F5;">03</span>
+                <h3 class="step-title">兴趣标签</h3>
               </div>
 
-              <div class="row g-2 position-relative" style="z-index: 1;">
+              <div class="row g-2">
                 <div class="col-6" v-for="tag in metaStore.tags" :key="tag.id">
                   <button type="button"
-                    class="rec-tag-btn w-100"
-                    :class="selectedTags.includes(tag.name) ? 'rec-tag-active' : 'rec-tag-default'"
+                    class="tag-btn w-100"
+                    :class="{ 'tag-active': selectedTags.includes(tag.name) }"
                     @click="toggleTag(tag.name)">
                     <i :class="tagIcon(tag.name)" class="me-1"></i>
                     {{ tag.name }}
@@ -224,27 +195,27 @@ const handleSubmit = async () => {
                 </div>
               </div>
 
-              <p class="text-xs text-muted text-center mt-3 mb-0 position-relative" style="z-index: 1;">
+              <p class="text-center mt-3 mb-0" style="color: var(--color-gray-400); font-size: 0.75rem;">
                 <i class="bi bi-info-circle me-1"></i>可多选，推荐更精准
               </p>
             </div>
           </div>
         </div>
 
-        <!-- 提交按钮 -->
+        <!-- Submit -->
         <div class="mt-4">
-          <button type="submit" class="btn rec-submit-btn w-100" :disabled="recommendationStore.isLoading">
+          <button type="submit" class="submit-btn w-100" :disabled="recommendationStore.isLoading">
             <span v-if="recommendationStore.isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
             <i v-else class="bi bi-magic me-2"></i>
             {{ recommendationStore.isLoading ? '计算中...' : '获取智能推荐' }}
           </button>
         </div>
 
-        <!-- 底部提示 -->
-        <div class="mt-3 text-center">
-          <span class="text-xs text-muted me-3"><i class="bi bi-person me-1"></i>个性化推荐</span>
-          <span class="text-xs text-muted me-3"><i class="bi bi-map me-1"></i>精选行程</span>
-          <span class="text-xs text-muted"><i class="bi bi-shield-check me-1"></i>安心出行</span>
+        <!-- Footer -->
+        <div class="mt-3 text-center" style="font-size: 0.75rem; color: var(--color-gray-400);">
+          <span class="me-3"><i class="bi bi-person me-1"></i>个性化推荐</span>
+          <span class="me-3"><i class="bi bi-map me-1"></i>精选行程</span>
+          <span><i class="bi bi-shield-check me-1"></i>安心出行</span>
         </div>
       </div>
     </form>
@@ -252,132 +223,147 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped>
-/* 卡片容器 */
-.rec-card {
-  background: #f5f7fa;
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-  position: relative;
-  overflow: hidden;
+.form-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
+  box-shadow: 0 4px 24px rgba(14, 165, 233, 0.06);
 }
 
-/* 装饰元素 */
-.rec-card-deco {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4rem;
-  height: 4rem;
-  background: rgba(64,128,255,0.05);
-  border-bottom-right-radius: 100%;
+.step-card {
+  background: var(--color-sky-50);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  height: 100%;
 }
 
-/* 步骤编号 */
-.rec-step-num {
-  width: 2rem;
-  height: 2rem;
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--space-5);
+}
+
+.step-num {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-weight: 700;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   flex-shrink: 0;
 }
 
-/* 输入框 */
-.rec-input {
-  border: 1px solid #e5e9f2;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
+.step-title {
   font-size: 0.9rem;
-}
-.rec-input:focus {
-  border-color: #4080FF;
-  box-shadow: 0 0 0 3px rgba(64,128,255,0.15);
-  outline: none;
+  font-weight: 600;
+  color: var(--color-gray-800);
+  margin: 0;
 }
 
-/* 单选按钮 */
-.rec-radio-circle {
-  width: 1.25rem;
-  height: 1.25rem;
+.form-label-sm {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-gray-500);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  border: 1px solid var(--color-sky-200);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: var(--color-gray-800);
+  background: #fff;
+  transition: var(--transition-all);
+  outline: none;
+}
+.form-input:focus {
+  border-color: var(--color-sky-400);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+/* Radio */
+.radio-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.radio-circle {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 2px solid #d0d5dd;
+  border: 2px solid var(--color-gray-300);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: var(--transition-all);
 }
-.rec-radio-circle.active {
-  border-color: #00C48C;
-  background: #00C48C;
+.radio-circle.active {
+  border-color: var(--color-green-600);
+  background: var(--color-green-600);
 }
-.rec-radio-dot {
-  width: 0.5rem;
-  height: 0.5rem;
+.radio-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #fff;
 }
-.cursor-pointer {
+
+/* Tags */
+.tag-btn {
+  border: 1px solid var(--color-sky-200);
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 8px 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-gray-600);
+  text-align: center;
+  transition: var(--transition-all);
   cursor: pointer;
 }
-
-/* 标签按钮 */
-.rec-tag-btn {
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  border: 1px solid #e5e9f2;
-  background: #fff;
-  text-align: center;
-  transition: all 0.15s ease;
+.tag-btn:hover {
+  background: var(--color-sky-100);
 }
-.rec-tag-btn:hover {
-  background: #f0f2f5;
-}
-.rec-tag-active {
-  background: rgba(64,128,255,0.1);
-  border-color: #4080FF;
-  color: #4080FF;
-}
-.rec-tag-default {
-  color: #555;
+.tag-active {
+  background: rgba(14, 165, 233, 0.1);
+  border-color: var(--color-sky-400);
+  color: var(--color-sky-600);
 }
 
-/* 渐变色提交按钮 */
-.rec-submit-btn {
-  background: linear-gradient(90deg, #4080FF 0%, #9765F5 100%);
+/* Submit */
+.submit-btn {
+  background: linear-gradient(135deg, var(--color-sky-500), #9765F5);
   color: #fff;
   border: none;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: 500;
-  box-shadow: 0 4px 14px rgba(64,128,255,0.25);
-  transition: all 0.2s ease;
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  font-size: 1.05rem;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+  cursor: pointer;
+  transition: var(--transition-all);
 }
-.rec-submit-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(64,128,255,0.35);
+.submit-btn:hover:not(:disabled) {
+  box-shadow: 0 8px 30px rgba(14, 165, 233, 0.35);
   transform: translateY(-1px);
-  color: #fff;
 }
-.rec-submit-btn:disabled {
+.submit-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-/* 工具类 */
-.text-xs {
-  font-size: 0.75rem;
-}
-.max-w-4xl {
-  max-width: 56rem;
-}
-.pointer-events-none {
-  pointer-events: none;
+@media (max-width: 768px) {
+  .form-card {
+    padding: var(--space-5);
+  }
 }
 </style>

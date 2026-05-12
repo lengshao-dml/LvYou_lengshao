@@ -77,10 +77,8 @@ const handleCitySelection = (city) => {
                           <h3 class="card-title mb-1 fw-bold fs-2">{{ recommendationStore.recommendations[0].name }}</h3>
                           <h6 class="card-subtitle text-body-secondary fs-6">{{ recommendationStore.recommendations[0].province }}</h6>
                         </div>
-                        <span 
-                          class="badge rounded-pill fs-5" 
-                          style="color: #f97316; background-color: rgba(249, 115, 22, 0.1);"
-                        >{{ recommendationStore.recommendations[0].score.toFixed(1) }} 分</span>
+                        <span class="badge badge-score rounded-pill fs-5">
+                          {{ recommendationStore.recommendations[0].score.toFixed(1) }} 分</span>
                       </div>
 
                       <div class="d-flex align-items-center text-secondary mb-3">
@@ -126,23 +124,36 @@ const handleCitySelection = (city) => {
 
 <style scoped>
 .fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity 0.3s ease;
 }
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
 }
+@media (prefers-reduced-motion: reduce) {
+  .fade-enter-active, .fade-leave-active {
+    transition: none;
+  }
+}
 
 .recommendation-card {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  border: 1px solid #e9ecef;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  border: 1px solid var(--color-border);
   cursor: pointer;
 }
 .recommendation-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg) !important;
 }
 .recommendation-card-featured:hover {
   transform: translateY(-3px);
   box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recommendation-card,
+  .recommendation-card:hover,
+  .recommendation-card-featured:hover {
+    transition: none;
+    transform: none;
+  }
 }
 </style>
