@@ -6,6 +6,7 @@ import com.textoasis.model.City;
 import com.textoasis.model.WeatherForecast;
 import com.textoasis.repository.CityRepository;
 import com.textoasis.repository.WeatherForecastRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -29,9 +30,17 @@ public class WeatherUpdateService {
     private final WeatherForecastRepository weatherForecastRepository;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-    // 每天凌晨2点执行
+    // 启动后延迟 5 秒首次执行，然后每天凌晨 2 点更新
+    @Async
+    @Transactional
+    @PostConstruct
+    public void initWeatherData() {
+        log.info("系统启动，开始首次加载天气数据...");
+        updateAllCityWeatherForecasts();
+    }
+
     @Scheduled(cron = "0 0 2 * * ?")
-    @Async // 确保这个耗时任务在单独的线程中执行
+    @Async
     @Transactional
     public void updateAllCityWeatherForecasts() {
         log.info("Starting scheduled job: Update all city weather forecasts.");

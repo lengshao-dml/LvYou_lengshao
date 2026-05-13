@@ -64,8 +64,8 @@ public class PersonalizedRecommendationService {
         }
         result.setRecommendedCities(personalizedCities);
 
-        // 2. 热门标签词云（融合用户兴趣权重）
-        result.setHotTags(getHotTagCloud(userProfile));
+        // 2. 热门标签词云（全平台用户标签 70% + 热门城市标签 30%）
+        result.setHotTags(getHotTagCloud());
 
         // 3. 热门城市词云
         result.setHotCities(getHotCityCloud());
@@ -266,49 +266,75 @@ public class PersonalizedRecommendationService {
     }
 
     /**
-     * 获取热门标签词云数据，融合全局热度和用户兴趣权重（用户权重 70%，全局热度 30%）
+     * 获取热门标签词云数据（全平台统一，非个性化）。
+     * 综合分 = 全平台用户标签(70%) + 热门城市标签(30%)
      */
-    private List<PersonalizedRecommendationDto.WordCloudItem> getHotTagCloud(Map<String, Double> userProfile) {
-        List<Tag> allTags = tagRepository.findAll();
-        List<CityPopularity> cityPopularities = popularityRepository.findAll();
+    private List<PersonalizedRecommendationDto.WordCloudItem> getHotTagCloud() {
+        Map<String, Double> tagScores = new HashMap<>();
 
-        // 1. 计算全局热度分
-        Map<String, Long> globalScoreMap = new HashMap<>();
-        long maxGlobal = 1;
-        for (Tag tag : allTags) {
-            if (tag.getFeatures() != null) {
-                long totalScore = tag.getFeatures().stream()
-                        .filter(f -> f.getCity() != null)
-                        .mapToLong(cf -> cityPopularities.stream()
-                                .filter(cp -> cp.getCity() != null && cp.getCity().getId().equals(cf.getCity().getId()))
-                                .findFirst()
-                                .map(cp -> (long) (1 + (cp.getScore() != null ? cp.getScore().longValue() : 0)))
-                                .orElse(1L))
-                        .sum();
-                globalScoreMap.put(tag.getName(), Math.max(1, totalScore));
-                if (totalScore > maxGlobal) maxGlobal = totalScore;
+        // 1. 统计所有用户注册时选的兴趣标签（按权重累加）
+        List<UserInterestTag> allUserTags = userInterestTagRepository.findAll();
+        for (UserInterestTag uit : allUserTags) {
+            if (uit.getTag() != null) {
+                tagScores.merge(uit.getTag().getName(), uit.getWeight(), Double::sum);
             }
         }
 
-        // 2. 融合用户兴趣权重：综合分 = 全局归一化分 * 0.3 + 用户兴趣权重 * 0.7
-        Map<String, Double> blendedScores = new HashMap<>();
-        for (Tag tag : allTags) {
-            double globalNorm = globalScoreMap.containsKey(tag.getName())
-                    ? (double) globalScoreMap.get(tag.getName()) / maxGlobal
-                    : 0.0;
-            double userWeight = userProfile.getOrDefault(tag.getName(), 0.0);
-            blendedScores.put(tag.getName(), globalNorm * 0.3 + userWeight * 0.7);
+        // 2. 统计所有用户智能推荐时选的标签（每条记录记 1 分）
+        List<UserRecommendLog> allLogs = recommendLogRepository.findAll();
+        for (UserRecommendLog logEntry : allLogs) {
+            if (logEntry.getInterestTags() != null && !logEntry.getInterestTags().isBlank()) {
+                for (String tagName : logEntry.getInterestTags().split(",")) {
+                    tagName = tagName.trim();
+                    if (!tagName.isEmpty()) {
+                        tagScores.merge(tagName, 1.0, Double::sum);
+                    }
+                }
+            }
         }
 
-        // 3. 按综合分排序取 top N，转为词云条目
-        return blendedScores.entrySet().stream()
+        // 3. 计算热门城市标签分（权重 30%）
+        Map<String, Double> cityTagScores = new HashMap<>();
+        List<CityPopularity> cityPopularities = popularityRepository.findAll();
+        double maxCityScore = 1.0;
+        for (Tag tag : tagRepository.findAll()) {
+            if (tag.getFeatures() != null) {
+                double score = tag.getFeatures().stream()
+                        .filter(f -> f.getCity() != null)
+                        .mapToDouble(cf -> cityPopularities.stream()
+                                .filter(cp -> cp.getCity() != null && cp.getCity().getId().equals(cf.getCity().getId()))
+                                .findFirst()
+                                .map(cp -> 1.0 + (cp.getScore() != null ? cp.getScore() : 0))
+                                .orElse(1.0))
+                        .sum();
+                cityTagScores.put(tag.getName(), score);
+                if (score > maxCityScore) maxCityScore = score;
+            }
+        }
+
+        // 4. 归一化用户标签分和城市标签分，然后按 70:30 融合
+        double maxUserScore = tagScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
+
+        Map<String, Double> blended = new HashMap<>();
+        Set<String> allTagNames = new HashSet<>();
+        allTagNames.addAll(tagScores.keySet());
+        allTagNames.addAll(cityTagScores.keySet());
+
+        for (String name : allTagNames) {
+            double userNorm = maxUserScore > 0 ? tagScores.getOrDefault(name, 0.0) / maxUserScore : 0.0;
+            double cityNorm = maxCityScore > 0 ? cityTagScores.getOrDefault(name, 0.0) / maxCityScore : 0.0;
+            blended.put(name, userNorm * 0.7 + cityNorm * 0.3);
+        }
+
+        // 5. 按综合分排序取 top N
+        return blended.entrySet().stream()
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                 .limit(HOT_TAG_CLOUD_SIZE)
                 .map(entry -> {
                     PersonalizedRecommendationDto.WordCloudItem item = new PersonalizedRecommendationDto.WordCloudItem();
                     item.setName(entry.getKey());
-                    item.setCount(globalScoreMap.getOrDefault(entry.getKey(), 1L));
-                    item.setWeight(normalizeWeightDouble(entry.getValue(), blendedScores.values()));
+                    item.setCount((long) (entry.getValue() * 100));
+                    item.setWeight(normalizeWeightDouble(entry.getValue(), blended.values()));
                     return item;
                 })
                 .collect(Collectors.toList());

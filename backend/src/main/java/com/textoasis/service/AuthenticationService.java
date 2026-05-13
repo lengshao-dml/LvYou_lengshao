@@ -33,6 +33,20 @@ public class AuthenticationService {
 
     @Transactional
     public String register(RegisterRequest request) {
+        // 校验用户名
+        if (request.getUsername() == null || request.getUsername().trim().length() < 3) {
+            throw new RegistrationException("用户名至少需要3个字符");
+        }
+        if (request.getUsername().length() > 30) {
+            throw new RegistrationException("用户名不能超过30个字符");
+        }
+        // 校验密码强度
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            throw new RegistrationException("密码至少需要6个字符");
+        }
+        if (request.getPassword().length() > 128) {
+            throw new RegistrationException("密码不能超过128个字符");
+        }
         // 检查用户名是否已存在
         userRepository.findByUsername(request.getUsername()).ifPresent(u -> {
             throw new RegistrationException("该用户名已被使用");
