@@ -1,0 +1,16 @@
+[Unit]
+Description=旅城后端 Spring Boot
+After=network.target
+
+[Service]
+Type=simple
+User=leng
+WorkingDirectory=/home/leng/Study/LvYou/backend
+ExecStart=/home/leng/Study/LvYou/backend/mvnw spring-boot:run -Dspring-boot.run.profiles=local
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

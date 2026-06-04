@@ -18,6 +18,21 @@ apiClient.interceptors.request.use(config => {
   return config;
 });
 
+// 响应拦截器：检测 401 登录过期
+apiClient.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      const msg = error.response.data?.error?.message || '登录已过期，请重新登录';
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      alert(msg);
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
  * 获取所有标签
  * @returns {Promise<axios.AxiosResponse<any>>}
